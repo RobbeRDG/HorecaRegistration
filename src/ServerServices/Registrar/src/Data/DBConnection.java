@@ -1,5 +1,9 @@
 package Data;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
@@ -9,9 +13,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DBConnection {
-    private static final String url =
-            "postgres://sdqxsgwfwqrtcu:e3d76f02eceab1c64d970f8e5ade2317c2d68d7f318bad82d94da69a82361de9@ec2-46-137-124-19.eu-west-1.compute.amazonaws.com:5432/df61qauedb1vm9";
+    private static String url;
     private Connection conn;
+
+    public DBConnection() throws IOException {
+        //Get the db url
+        BufferedReader reader = new BufferedReader(new FileReader(
+                "Resources/private/dbLogins/registrar/url.txt"));
+        url = reader.readLine();
+    }
 
     public void connectToDatabase() throws SQLException, URISyntaxException {
         URI dbUri = new URI(url);
