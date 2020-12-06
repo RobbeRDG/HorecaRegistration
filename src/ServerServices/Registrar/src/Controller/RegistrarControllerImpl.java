@@ -17,6 +17,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Map;
 
 public class RegistrarControllerImpl implements RegistarController{
     private static DBConnection dbConnection;
@@ -82,7 +83,7 @@ public class RegistrarControllerImpl implements RegistarController{
     ///         CATERING FACILITY ENROLLMENT
     ///////////////////////////////////////////////////////////////////
     @Override
-    public void registerCateringFacility(String facilityIdentifier) throws Exception {
+    public void registerCateringFacility(int facilityIdentifier) throws Exception {
         try {
             //Test if the identifier has the correct syntax
             if (testFacilityIdentifier(facilityIdentifier) == false) throw new IllegalArgumentException(
@@ -103,22 +104,15 @@ public class RegistrarControllerImpl implements RegistarController{
     }
 
 
-    private boolean testFacilityIdentifier(String facilityIdentifier) {
-        //Test if the identifier is numeric
-        try {
-            Integer.parseInt(facilityIdentifier);
-        } catch ( NumberFormatException e) {
-            return false;
-        }
-
+    private boolean testFacilityIdentifier(int facilityIdentifier) {
         //Test if the identifier is 10 numbers long
-        if (facilityIdentifier.length() != 10) return false;
+        if (String.valueOf(facilityIdentifier).length() != 10) return false;
 
         return true;
     }
 
     @Override
-    public HashMap<LocalDate, byte[]> getPseudomyms(String facilityIdentifier, int monthIndex) throws Exception {
+    public HashMap<Calendar, byte[]> getPseudomyms(int facilityIdentifier, int year, int monthIndex) throws Exception {
         //test if the facility is registered
         try {
             if (!dbConnection.containsCateringFacility(facilityIdentifier)) throw new IllegalArgumentException("Couldn't create pseudonyms: Facility not registered");
@@ -132,33 +126,65 @@ public class RegistrarControllerImpl implements RegistarController{
         }
 
         //Get the days in the month
-        ArrayList<String> daysInMonth = generateDaysInMonth(monthIndex);
+        ArrayList<Calendar> daysInMonth = generateDaysInMonth(year, monthIndex);
 
         //Generate new secret key for each day in month
-        HashMap<String,byte[]> facilitySecretKeys = generateSecretKeys(daysInMonth, facilityIdentifier);
+        HashMap<Calendar,byte[]> facilitySecretKeys = generateSecretKeys(daysInMonth, facilityIdentifier);
 
-        //Hash the secret keys
-        ArrayList<byte[]> facilityPseudonyms = generatePseudonyms(facilitySecretKeys, facilityIdentifier);
+        //Hash the secret keys to find the pseudonyms
+        HashMap<Calendar,byte[]> facilityPseudonyms = generatePseudonyms(facilitySecretKeys, facilityIdentifier);
 
+        //Place the pseudonyms in the db
+        dbConnection.addPseudonyms(facilityIdentifier, facilityPseudonyms);
+
+        return facilityPseudonyms;
     }
 
-    private ArrayList<byte[]> generatePseudonyms(HashMap<String,byte[]> facilitySecretKeys, String facilityIdentifier) throws NoSuchAlgorithmException {
+    private HashMap<Calendar,byte[]> generatePseudonyms(HashMap<Calendar,byte[]> facilitySecretKeys, int facilityIdentifier) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        for
-        byte[] encodedhash = digest.digest();
+        byte[] facilityIdentifierBytes = ByteBuffer.allocate(4).putInt(facilityIdentifier).array();
+        HashMap<Calendar,byte[]> pseudonyms = new HashMap<>();
+
+        for (Map.Entry<Calendar, byte[]> entry : facilitySecretKeys.entrySet()) {
+            Calendar day = entry.getKey();
+            byte[] secretKey = entry.getValue();
+
+            //Generate string from date
+            SimpleDateFormat dateFormat = new SimpleDateFormat("ddmmyyyy");
+            String dayString = dateFormat.format(day.getTime());
+
+            //Generate a new byte array
+            byte[] temp = new byte[secretKey.length + facilityIdentifierBytes.length + dayString.getBytes().length];
+            ByteBuffer buff = ByteBuffer.wrap(temp);
+            buff.put(secretKey);
+            buff.put(facilityIdentifierBytes);
+            buff.put(dayString.getBytes());
+
+            byte[] preHashPseudonym = buff.array();
+            byte[] encodedHashPseudonym = digest.digest(preHashPseudonym);
+
+            pseudonyms.put(day, encodedHashPseudonym);
+        }
+
+        return pseudonyms;
     }
 
-    private HashMap<String, byte[]> generateSecretKeys(ArrayList<String> daysInMonth, String facilityIdentifier) {
-        HashMap<String,byte[]> secretKeys = new HashMap<>();
+    private HashMap<Calendar, byte[]> generateSecretKeys(ArrayList<Calendar> daysInMonth, int facilityIdentifier) {
+        HashMap<Calendar,byte[]> secretKeys = new HashMap<>();
 
-        byte[] facilityIdentifierBytes = facilityIdentifier.getBytes();
-        for (String day : daysInMonth) {
-            byte[] temp = new byte[masterKey.getEncoded().length + facilityIdentifierBytes.length + day.getBytes().length];
+        byte[] facilityIdentifierBytes = ByteBuffer.allocate(4).putInt(facilityIdentifier).array();
+        for (Calendar day : daysInMonth) {
+            //Generate string from date
+            SimpleDateFormat dateFormat = new SimpleDateFormat("ddmmyyyy");
+            String dayString = dateFormat.format(day.getTime());
+
+
+            byte[] temp = new byte[masterKey.getEncoded().length + facilityIdentifierBytes.length + dayString.getBytes().length];
 
             ByteBuffer buff = ByteBuffer.wrap(temp);
             buff.put(masterKey.getEncoded());
             buff.put(facilityIdentifierBytes);
-            buff.put(day.getBytes());
+            buff.put(dayString.getBytes());
 
             byte[] secretKey = buff.array();
             secretKeys.put(day,secretKey);
@@ -167,19 +193,19 @@ public class RegistrarControllerImpl implements RegistarController{
         return secretKeys;
     }
 
-    private ArrayList<String> generateDaysInMonth(int monthIndex) {
-        ArrayList<String > daysInMonth = new ArrayList<>();
+    private ArrayList<Calendar> generateDaysInMonth(int year, int monthIndex) {
+        ArrayList<Calendar> daysInMonth = new ArrayList<>();
 
         // Set the calendar to the selected month
         Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.YEAR, year);
         cal.set(Calendar.MONTH, monthIndex);
 
         int maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
         for (int i = 1; i <= maxDay; i++) {
             cal.set(Calendar.DAY_OF_MONTH, i);
-            daysInMonth.add(df.format(cal.getTime()));
+            daysInMonth.add((Calendar) cal.clone());
         }
 
         return daysInMonth;
@@ -190,12 +216,36 @@ public class RegistrarControllerImpl implements RegistarController{
     ///         USER ENROLLMENT
     ///////////////////////////////////////////////////////////////////
     @Override
-    public void registerUser(String userIdentifier) {
+    public void registerUser(int userIdentifier) throws SQLException, IllegalArgumentException {
+        try {
+            //Test if the identifier has the correct syntax
+            if (testUserIdentifierSyntax(userIdentifier) == false) throw new IllegalArgumentException(
+                    "User can't be created: The user identifier is not the correct syntax");
+
+            //Test if the Catering facility doesn't already exist
+            if (dbConnection.containsUser(userIdentifier) == true) throw new IllegalArgumentException(
+                    "User can't be created: the user identifier already exists");
+
+            //Place the new user in the db
+            dbConnection.registerUser(userIdentifier);
+
+            System.out.println("New user registered: " + userIdentifier);
+        } catch (Exception e) {
+            handleException(e);
+            throw e;
+        }
 
     }
 
+    private boolean testUserIdentifierSyntax(int userIdentifier) {
+        //Test if the identifier is 10 numbers long
+        if (String.valueOf(userIdentifier).length() != 10) return false;
+
+        return true;
+    }
+
     @Override
-    public byte[] getToken(String userIdentifier) {
+    public byte[] getTokens(int userIdentifier, Calendar date) {
         return new byte[0];
     }
 

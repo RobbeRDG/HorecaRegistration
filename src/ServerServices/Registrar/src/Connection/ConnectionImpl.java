@@ -7,6 +7,7 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.time.LocalDate;
+import java.util.Calendar;
 import java.util.HashMap;
 
 public class ConnectionImpl implements Connection{
@@ -30,18 +31,26 @@ public class ConnectionImpl implements Connection{
     ///         CATERING FACILITY ENROLLMENT
     ///////////////////////////////////////////////////////////////////
     @Override
-    public void registerCateringFacility(String facilityIdentifier) throws Exception {
+    public void registerCateringFacility(int facilityIdentifier) throws Exception {
         registarController.registerCateringFacility(facilityIdentifier);
     }
 
     @Override
-    public HashMap<LocalDate, byte[]> getPseudonyms(String facilityIdentifier) throws RemoteException {
-        return registarController.getPseudomyms(facilityIdentifier);
+    public HashMap<Calendar, byte[]> getPseudonyms(int facilityIdentifier, int year, int monthIndex) throws Exception {
+        return registarController.getPseudomyms(facilityIdentifier, year, monthIndex);
     }
 
 
     ///////////////////////////////////////////////////////////////////
     ///         USER ENROLLMENT
     ///////////////////////////////////////////////////////////////////
+    @Override
+    public void registerUser(int userIdentifier) throws Exception {
+        registarController.registerUser(userIdentifier);
+    }
 
+    @Override
+    public byte[] getTokens(int userIdentifier, Calendar date) {
+        return registarController.getTokens(userIdentifier, date);
+    }
 }
