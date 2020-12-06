@@ -1,19 +1,19 @@
 package Controller;
 
+import Common.Messages.TokenUpdate;
 import Connection.*;
 import Data.DBConnection;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
+import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -22,15 +22,49 @@ import java.util.Map;
 public class RegistrarControllerImpl implements RegistarController{
     private static DBConnection dbConnection;
     private static ConnectionImpl rmiServer;
-    private static SecretKey masterKey;
+    private static PrivateKey masterKeyPrivate;
+    private static PublicKey masterKeyPublic;
 
-    public RegistrarControllerImpl() throws NoSuchAlgorithmException {
+    public RegistrarControllerImpl() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, CertificateException, ClassNotFoundException {
         if (dbConnection == null) dbConnection = new DBConnection();
         if (rmiServer == null) rmiServer = new ConnectionImpl(this);
-        if (masterKey == null) {
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(256); // for example
-            masterKey = keyGen.generateKey();
+        if (masterKeyPrivate == null || masterKeyPublic == null) {
+            masterKeyPublic = readPublicKey();
+            masterKeyPrivate = readPrivateKey();
+        }
+    }
+
+    private static PublicKey readPublicKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, ClassNotFoundException {
+        InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarMasterPublic.txt");
+        ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
+        try {
+            BigInteger m = (BigInteger) oin.readObject();
+            BigInteger e = (BigInteger) oin.readObject();
+            RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
+            KeyFactory fact = KeyFactory.getInstance("RSA");
+            PublicKey pubKey = fact.generatePublic(keySpec);
+            return pubKey;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            oin.close();
+        }
+    }
+
+    private static PrivateKey readPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, ClassNotFoundException {
+        InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarMasterPrivate.txt");
+        ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
+        try {
+            BigInteger m = (BigInteger) oin.readObject();
+            BigInteger e = (BigInteger) oin.readObject();
+            RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
+            KeyFactory fact = KeyFactory.getInstance("RSA");
+            PrivateKey privateKey = fact.generatePrivate(keySpec);
+            return privateKey;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            oin.close();
         }
     }
 
@@ -41,6 +75,7 @@ public class RegistrarControllerImpl implements RegistarController{
             registrar.stop();
         } catch (Exception e) {
             System.out.println("Registrar failed");
+            e.printStackTrace();
         }
     }
 
@@ -113,31 +148,29 @@ public class RegistrarControllerImpl implements RegistarController{
 
     @Override
     public HashMap<Calendar, byte[]> getPseudomyms(int facilityIdentifier, int year, int monthIndex) throws Exception {
-        //test if the facility is registered
         try {
+            //test if the facility is registered
             if (!dbConnection.containsCateringFacility(facilityIdentifier)) throw new IllegalArgumentException("Couldn't create pseudonyms: Facility not registered");
+
+            //Get the days in the month
+            ArrayList<Calendar> daysInMonth = generateDaysInMonth(year, monthIndex);
+
+            //Generate new secret key for each day in month
+            HashMap<Calendar,byte[]> facilitySecretKeys = generateSecretKeys(daysInMonth, facilityIdentifier);
+
+            //Hash the secret keys to find the pseudonyms
+            HashMap<Calendar,byte[]> facilityPseudonyms = generatePseudonyms(facilitySecretKeys, facilityIdentifier);
+
+            //Place the pseudonyms in the db
+            dbConnection.addPseudonyms(facilityIdentifier, facilityPseudonyms);
+
+            return facilityPseudonyms;
         } catch (IllegalArgumentException e) {
-            handleException(e);
             throw e;
         } catch (Exception e) {
             handleException(e);
-            String exceptionMessage = "Couldn't create pseudonyms: something went wrong";
-            throw new Exception(exceptionMessage);
+            throw new Exception("Couldn't create pseudonyms: Something went wrong");
         }
-
-        //Get the days in the month
-        ArrayList<Calendar> daysInMonth = generateDaysInMonth(year, monthIndex);
-
-        //Generate new secret key for each day in month
-        HashMap<Calendar,byte[]> facilitySecretKeys = generateSecretKeys(daysInMonth, facilityIdentifier);
-
-        //Hash the secret keys to find the pseudonyms
-        HashMap<Calendar,byte[]> facilityPseudonyms = generatePseudonyms(facilitySecretKeys, facilityIdentifier);
-
-        //Place the pseudonyms in the db
-        dbConnection.addPseudonyms(facilityIdentifier, facilityPseudonyms);
-
-        return facilityPseudonyms;
     }
 
     private HashMap<Calendar,byte[]> generatePseudonyms(HashMap<Calendar,byte[]> facilitySecretKeys, int facilityIdentifier) throws NoSuchAlgorithmException {
@@ -179,10 +212,10 @@ public class RegistrarControllerImpl implements RegistarController{
             String dayString = dateFormat.format(day.getTime());
 
 
-            byte[] temp = new byte[masterKey.getEncoded().length + facilityIdentifierBytes.length + dayString.getBytes().length];
+            byte[] temp = new byte[masterKeyPrivate.getEncoded().length + facilityIdentifierBytes.length + dayString.getBytes().length];
 
             ByteBuffer buff = ByteBuffer.wrap(temp);
-            buff.put(masterKey.getEncoded());
+            buff.put(masterKeyPrivate.getEncoded());
             buff.put(facilityIdentifierBytes);
             buff.put(dayString.getBytes());
 
@@ -245,8 +278,47 @@ public class RegistrarControllerImpl implements RegistarController{
     }
 
     @Override
-    public byte[] getTokens(int userIdentifier, Calendar date) {
-        return new byte[0];
+    public TokenUpdate getTokens(int userIdentifier, Calendar date) throws Exception {
+        try {
+            //test if the user is registered
+            if (!dbConnection.containsUser(userIdentifier)) throw new IllegalArgumentException("Couldn't create tokens: user not registered");
+
+            ArrayList<byte[]> tokens = new ArrayList<>();
+            HashMap<byte[], byte[]> signatures = new HashMap<>();
+            SecureRandom secureRandom = new SecureRandom();
+
+            //Generate set amount of random tokens
+            int numberOfTokens = 48;
+            int tokenLength = 16;
+
+            for (int i = 0; i < numberOfTokens; i++) {
+                //Create the random token
+                byte[] token = new byte[tokenLength];
+                secureRandom.nextBytes(token);
+
+                //Create the signature for the token
+                Signature sign = Signature.getInstance("SHA256withRSA");
+                sign.initSign(masterKeyPrivate);
+                sign.update(token);
+                byte[] signature = sign.sign();
+
+                //Place the token and signature in the arraylist and hashmap
+                tokens.add(token);
+                signatures.put(token, signature);
+            }
+
+            //Save the generated tokens in the db
+            dbConnection.addTokens(userIdentifier, date, tokens);
+
+            //Return a token update message to the user
+            TokenUpdate tokenUpdate = new TokenUpdate(tokens, signatures);
+            return tokenUpdate;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't create new tokens: Something went wrong");
+        }
     }
 
 

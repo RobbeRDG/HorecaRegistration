@@ -1,9 +1,11 @@
 package Controller;
 
-import java.lang.reflect.Array;
+import Common.Messages.TokenUpdate;
+
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 
@@ -14,5 +16,5 @@ public interface RegistarController {
 
     //User enrollment
     void registerUser(int userIdentifier) throws SQLException;
-    byte[] getTokens(int userIdentifier, Calendar date);
+    TokenUpdate getTokens(int userIdentifier, Calendar date) throws Exception;
 }

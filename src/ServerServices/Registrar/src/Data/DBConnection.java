@@ -3,6 +3,7 @@ package Data;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -92,5 +93,21 @@ public class DBConnection {
         stmt.setInt(1, userIdentifier);
 
         stmt.executeUpdate();
+    }
+
+    public void addTokens(int userIdentifier,Calendar day, ArrayList<byte[]> tokens) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO tokens(user_identifier, token, date) VALUES (?, ?, ?)");
+
+        //Generate sql compatible date from date
+        java.sql.Date sqlDate = new java.sql.Date(day.getTime().getTime());
+
+        for (byte[] token : tokens) {
+            stmt.setInt(1, userIdentifier);
+            stmt.setBytes(2, token);
+            stmt.setDate(3, sqlDate);
+            stmt.addBatch();
+        }
+
+        stmt.executeBatch();
     }
 }

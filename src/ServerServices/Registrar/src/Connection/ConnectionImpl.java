@@ -1,11 +1,15 @@
 package Connection;
 
+import Common.Messages.TokenUpdate;
 import Controller.RegistarController;
 
 import java.rmi.AlreadyBoundException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -50,7 +54,7 @@ public class ConnectionImpl implements Connection{
     }
 
     @Override
-    public byte[] getTokens(int userIdentifier, Calendar date) {
+    public TokenUpdate getTokens(int userIdentifier, Calendar date) throws Exception {
         return registarController.getTokens(userIdentifier, date);
     }
 }
