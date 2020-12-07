@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -42,37 +43,37 @@ public class DBConnection {
     ///////////////////////////////////////////////////////////////////
     ///         CATERING FACILITY ENROLLMENT
     ///////////////////////////////////////////////////////////////////
-    public boolean containsCateringFacility(int facilityIdentifier) throws SQLException {
+    public boolean containsCateringFacility(String facilityIdentifier) throws SQLException {
         //Create query
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM cateringfacilities WHERE catering_identifier = ?");
-        stmt.setInt(1, facilityIdentifier);
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM cateringfacilities WHERE facility_identifier = ?");
+        stmt.setString(1, facilityIdentifier);
 
         //Run query
         ResultSet response = stmt.executeQuery();
 
-        if (response == null) return false;
+        if (response.next() == false) return false;
         else return true;
     }
 
-    public void registerCateringFacility(int facilityIdentifier) throws SQLException {
+    public void registerCateringFacility(String facilityIdentifier) throws SQLException {
         //Create query
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO cateringfacilities(catering_identifier) VALUES (?)");
-        stmt.setInt(1, facilityIdentifier);
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO cateringfacilities(facility_identifier) VALUES (?)");
+        stmt.setString(1, facilityIdentifier);
 
         stmt.executeUpdate();
     }
 
-    public void addPseudonyms(int facilityIdentifier, HashMap<Calendar,byte[]> facilityPseudonyms) throws SQLException {
+    public void addPseudonyms(String facilityIdentifier, HashMap<LocalDate,byte[]> facilityPseudonyms) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO pseudonyms(catering_identifier, date, pseudonym) VALUES (?, ?, ?)");
 
-        for (Map.Entry<Calendar, byte[]> entry : facilityPseudonyms.entrySet()) {
-            Calendar day = entry.getKey();
+        for (Map.Entry<LocalDate, byte[]> entry : facilityPseudonyms.entrySet()) {
+            LocalDate day = entry.getKey();
             byte[] pseudonym = entry.getValue();
 
             //Generate sql compatible date from date
-            java.sql.Date sqlDate = new java.sql.Date(day.getTime().getTime());
+            java.sql.Date sqlDate = java.sql.Date.valueOf(day);
 
-            stmt.setInt(1, facilityIdentifier);
+            stmt.setString(1, facilityIdentifier);
             stmt.setDate(2, sqlDate);
             stmt.setBytes(3, pseudonym);
             stmt.addBatch();
@@ -81,14 +82,27 @@ public class DBConnection {
         stmt.executeBatch();
     }
 
+    public void getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND MONTH(date) = ? AND YEAR(date) = ?");
+        stmt.setString(1, facilityIdentifier);
+        stmt.setInt(2, monthIndex);
+        stmt.setInt(3, year);
+
+        //Run query
+        ResultSet response = stmt.executeQuery();
+
+
+    }
+
 
     ///////////////////////////////////////////////////////////////////
     ///         USER ENROLLMENT
     ///////////////////////////////////////////////////////////////////
-    public boolean containsUser(int userIdentifier) throws SQLException {
+    public boolean containsUser(String userIdentifier) throws SQLException {
         //Create query
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE user_identifier = ?");
-        stmt.setInt(1, userIdentifier);
+        stmt.setString(1, userIdentifier);
 
         //Run query
         ResultSet response = stmt.executeQuery();
@@ -97,22 +111,22 @@ public class DBConnection {
         else return true;
     }
 
-    public void registerUser(int userIdentifier) throws SQLException {
+    public void registerUser(String userIdentifier) throws SQLException {
         //Create query
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(user_identifier) VALUES (?)");
-        stmt.setInt(1, userIdentifier);
+        stmt.setString(1, userIdentifier);
 
         stmt.executeUpdate();
     }
 
-    public void addTokens(int userIdentifier,Calendar day, ArrayList<byte[]> tokens) throws SQLException {
+    public void addTokens(String userIdentifier,Calendar day, ArrayList<byte[]> tokens) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO tokens(user_identifier, token, date) VALUES (?, ?, ?)");
 
         //Generate sql compatible date from date
         java.sql.Date sqlDate = new java.sql.Date(day.getTime().getTime());
 
         for (byte[] token : tokens) {
-            stmt.setInt(1, userIdentifier);
+            stmt.setString(1, userIdentifier);
             stmt.setBytes(2, token);
             stmt.setDate(3, sqlDate);
             stmt.addBatch();
@@ -120,4 +134,6 @@ public class DBConnection {
 
         stmt.executeBatch();
     }
+
+
 }

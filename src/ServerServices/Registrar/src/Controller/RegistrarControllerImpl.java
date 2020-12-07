@@ -1,33 +1,41 @@
 package Controller;
 
+import Common.Exceptions.AlreadyRegisteredException;
+import Common.Exceptions.NotRegisteredException;
+import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
-import Connection.*;
+import Connection.Registrar.RegistrarConnection;
+import Connection.Registrar.RegistrarConnectionImpl;
 import Data.DBConnection;
 
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 public class RegistrarControllerImpl implements RegistarController{
     private static DBConnection dbConnection;
-    private static ConnectionImpl rmiServer;
+    private static RegistrarConnectionImpl rmiServer;
     private static PrivateKey masterKeyPrivate;
     private static PublicKey masterKeyPublic;
+    private static final int RMIPort = 2222;
 
     public RegistrarControllerImpl() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, CertificateException, ClassNotFoundException {
         if (dbConnection == null) dbConnection = new DBConnection();
-        if (rmiServer == null) rmiServer = new ConnectionImpl(this);
+        if (rmiServer == null) rmiServer = new RegistrarConnectionImpl(this);
         if (masterKeyPrivate == null || masterKeyPublic == null) {
             masterKeyPublic = readPublicKey();
             masterKeyPrivate = readPrivateKey();
@@ -72,7 +80,7 @@ public class RegistrarControllerImpl implements RegistarController{
         try {
             RegistrarControllerImpl registrar = new RegistrarControllerImpl();
             registrar.start();
-            registrar.stop();
+            //registrar.stop();
         } catch (Exception e) {
             System.out.println("Registrar failed");
             e.printStackTrace();
@@ -86,13 +94,20 @@ public class RegistrarControllerImpl implements RegistarController{
             dbConnection.connectToDatabase();
 
             //Start the connection server
-            rmiServer.startServer();
-
-            System.out.println("Registrar service running");
+            startRMI();
         } catch (Exception e){
             System.out.println("Startup failed: " + e.getMessage());
         }
+    }
 
+    private void startRMI() throws RemoteException {
+        RegistrarConnection stub = (RegistrarConnection) UnicastRemoteObject
+                .exportObject((RegistrarConnection) rmiServer, 0);
+
+        Registry registry = LocateRegistry.createRegistry(RMIPort);
+        registry.rebind("RegistrarService", stub);
+
+        System.out.println("Started RMI server");
     }
 
     private void stop() {
@@ -118,14 +133,14 @@ public class RegistrarControllerImpl implements RegistarController{
     ///         CATERING FACILITY ENROLLMENT
     ///////////////////////////////////////////////////////////////////
     @Override
-    public void registerCateringFacility(int facilityIdentifier) throws Exception {
+    public void registerCateringFacility(String facilityIdentifier) throws Exception {
         try {
             //Test if the identifier has the correct syntax
             if (testFacilityIdentifier(facilityIdentifier) == false) throw new IllegalArgumentException(
                     "Catering facility can't be created: The catering identifier is not the correct syntax");
 
             //Test if the Catering facility doesn't already exist
-            if (dbConnection.containsCateringFacility(facilityIdentifier) == true) throw new IllegalArgumentException(
+            if (dbConnection.containsCateringFacility(facilityIdentifier)) throw new AlreadyRegisteredException(
                     "Catering facility can't be created: the catering identifier already exists");
 
             //Place the new facility in the db
@@ -139,32 +154,41 @@ public class RegistrarControllerImpl implements RegistarController{
     }
 
 
-    private boolean testFacilityIdentifier(int facilityIdentifier) {
+    private boolean testFacilityIdentifier(String facilityIdentifier) {
+        //test if the identifier is a number
+        try {
+            Integer.parseInt(facilityIdentifier);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
         //Test if the identifier is 10 numbers long
-        if (String.valueOf(facilityIdentifier).length() != 10) return false;
+        if (facilityIdentifier.length() != 10) return false;
 
         return true;
     }
 
     @Override
-    public HashMap<Calendar, byte[]> getPseudomyms(int facilityIdentifier, int year, int monthIndex) throws Exception {
+    public PseudonymUpdate getPseudomyms(String facilityIdentifier, int year, int monthIndex) throws Exception {
         try {
             //test if the facility is registered
-            if (!dbConnection.containsCateringFacility(facilityIdentifier)) throw new IllegalArgumentException("Couldn't create pseudonyms: Facility not registered");
+            if (!dbConnection.containsCateringFacility(facilityIdentifier)) throw new NotRegisteredException("Couldn't create pseudonyms: Facility not registered");
 
+            //Search database for existing pseudonyms
+            dbConnection.getPseudonyms(facilityIdentifier, year, monthIndex);
             //Get the days in the month
-            ArrayList<Calendar> daysInMonth = generateDaysInMonth(year, monthIndex);
+            ArrayList<LocalDate> daysInMonth = generateDaysInMonth(year, monthIndex);
 
             //Generate new secret key for each day in month
-            HashMap<Calendar,byte[]> facilitySecretKeys = generateSecretKeys(daysInMonth, facilityIdentifier);
+            HashMap<LocalDate,byte[]> facilitySecretKeys = generateSecretKeys(daysInMonth, facilityIdentifier);
 
             //Hash the secret keys to find the pseudonyms
-            HashMap<Calendar,byte[]> facilityPseudonyms = generatePseudonyms(facilitySecretKeys, facilityIdentifier);
+            HashMap<LocalDate,byte[]> facilityPseudonyms = generatePseudonyms(facilitySecretKeys, facilityIdentifier);
 
             //Place the pseudonyms in the db
             dbConnection.addPseudonyms(facilityIdentifier, facilityPseudonyms);
 
-            return facilityPseudonyms;
+            return new PseudonymUpdate(facilityPseudonyms);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
@@ -173,18 +197,18 @@ public class RegistrarControllerImpl implements RegistarController{
         }
     }
 
-    private HashMap<Calendar,byte[]> generatePseudonyms(HashMap<Calendar,byte[]> facilitySecretKeys, int facilityIdentifier) throws NoSuchAlgorithmException {
+    private HashMap<LocalDate,byte[]> generatePseudonyms(HashMap<LocalDate,byte[]> facilitySecretKeys, String facilityIdentifier) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] facilityIdentifierBytes = ByteBuffer.allocate(4).putInt(facilityIdentifier).array();
-        HashMap<Calendar,byte[]> pseudonyms = new HashMap<>();
+        byte[] facilityIdentifierBytes = facilityIdentifier.getBytes();
+        HashMap<LocalDate,byte[]> pseudonyms = new HashMap<>();
 
-        for (Map.Entry<Calendar, byte[]> entry : facilitySecretKeys.entrySet()) {
-            Calendar day = entry.getKey();
+        for (Map.Entry<LocalDate, byte[]> entry : facilitySecretKeys.entrySet()) {
+            LocalDate day = entry.getKey();
             byte[] secretKey = entry.getValue();
 
             //Generate string from date
-            SimpleDateFormat dateFormat = new SimpleDateFormat("ddmmyyyy");
-            String dayString = dateFormat.format(day.getTime());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
+            String dayString = day.format(formatter);
 
             //Generate a new byte array
             byte[] temp = new byte[secretKey.length + facilityIdentifierBytes.length + dayString.getBytes().length];
@@ -202,14 +226,14 @@ public class RegistrarControllerImpl implements RegistarController{
         return pseudonyms;
     }
 
-    private HashMap<Calendar, byte[]> generateSecretKeys(ArrayList<Calendar> daysInMonth, int facilityIdentifier) {
-        HashMap<Calendar,byte[]> secretKeys = new HashMap<>();
+    private HashMap<LocalDate, byte[]> generateSecretKeys(ArrayList<LocalDate> daysInMonth, String facilityIdentifier) {
+        HashMap<LocalDate,byte[]> secretKeys = new HashMap<>();
 
-        byte[] facilityIdentifierBytes = ByteBuffer.allocate(4).putInt(facilityIdentifier).array();
-        for (Calendar day : daysInMonth) {
+        byte[] facilityIdentifierBytes = facilityIdentifier.getBytes();
+        for (LocalDate day : daysInMonth) {
             //Generate string from date
-            SimpleDateFormat dateFormat = new SimpleDateFormat("ddmmyyyy");
-            String dayString = dateFormat.format(day.getTime());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
+            String dayString = day.format(formatter);
 
 
             byte[] temp = new byte[masterKeyPrivate.getEncoded().length + facilityIdentifierBytes.length + dayString.getBytes().length];
@@ -226,19 +250,16 @@ public class RegistrarControllerImpl implements RegistarController{
         return secretKeys;
     }
 
-    private ArrayList<Calendar> generateDaysInMonth(int year, int monthIndex) {
-        ArrayList<Calendar> daysInMonth = new ArrayList<>();
+    private ArrayList<LocalDate> generateDaysInMonth(int year, int monthIndex) {
+        ArrayList<LocalDate> daysInMonth = new ArrayList<>();
 
-        // Set the calendar to the selected month
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.YEAR, year);
-        cal.set(Calendar.MONTH, monthIndex);
-
-        int maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        // get the number of days in month
+        YearMonth yearMonthObject = YearMonth.of(year, monthIndex);
+        int maxDay = yearMonthObject.lengthOfMonth();
 
         for (int i = 1; i <= maxDay; i++) {
-            cal.set(Calendar.DAY_OF_MONTH, i);
-            daysInMonth.add((Calendar) cal.clone());
+            LocalDate date = LocalDate.of(year, monthIndex, i);
+            daysInMonth.add(date);
         }
 
         return daysInMonth;
@@ -249,14 +270,14 @@ public class RegistrarControllerImpl implements RegistarController{
     ///         USER ENROLLMENT
     ///////////////////////////////////////////////////////////////////
     @Override
-    public void registerUser(int userIdentifier) throws SQLException, IllegalArgumentException {
+    public void registerUser(String userIdentifier) throws SQLException, IllegalArgumentException, AlreadyRegisteredException {
         try {
             //Test if the identifier has the correct syntax
             if (testUserIdentifierSyntax(userIdentifier) == false) throw new IllegalArgumentException(
                     "User can't be created: The user identifier is not the correct syntax");
 
             //Test if the Catering facility doesn't already exist
-            if (dbConnection.containsUser(userIdentifier) == true) throw new IllegalArgumentException(
+            if (dbConnection.containsUser(userIdentifier) == true) throw new AlreadyRegisteredException(
                     "User can't be created: the user identifier already exists");
 
             //Place the new user in the db
@@ -270,18 +291,25 @@ public class RegistrarControllerImpl implements RegistarController{
 
     }
 
-    private boolean testUserIdentifierSyntax(int userIdentifier) {
+    private boolean testUserIdentifierSyntax(String userIdentifier) {
+        //test if the identifier is a number
+        try {
+            Integer.parseInt(userIdentifier);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
         //Test if the identifier is 10 numbers long
-        if (String.valueOf(userIdentifier).length() != 10) return false;
+        if (userIdentifier.length() != 10) return false;
 
         return true;
     }
 
     @Override
-    public TokenUpdate getTokens(int userIdentifier, Calendar date) throws Exception {
+    public TokenUpdate getTokens(String userIdentifier, Calendar date) throws Exception {
         try {
             //test if the user is registered
-            if (!dbConnection.containsUser(userIdentifier)) throw new IllegalArgumentException("Couldn't create tokens: user not registered");
+            if (!dbConnection.containsUser(userIdentifier)) throw new NotRegisteredException("Couldn't create tokens: user not registered");
 
             ArrayList<byte[]> tokens = new ArrayList<>();
             HashMap<byte[], byte[]> signatures = new HashMap<>();
