@@ -1,8 +1,9 @@
 package Controller;
 
-import Common.Exceptions.NotRegisteredException;
 import Common.Messages.PseudonymUpdate;
-import Connection.Registrar.RegistrarConnection;
+import Connection.ConnectionController;
+import Connection.ConnectionControllerImpl;
+import Connection.Registrar.Facility.RegistrarFacilityService;
 import QRGenerator.QRGenerator;
 
 import java.rmi.NotBoundException;
@@ -11,20 +12,16 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.SecureRandom;
 import java.time.LocalDate;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Scanner;
 
 public class FacilityControllerImpl {
     private static final QRGenerator qrCodeGenerator = new QRGenerator();
-    private RegistrarConnection registrarConnection;
-    private static final int registrarPort = 2222;
+    private ConnectionController connectionController = new ConnectionControllerImpl();
     private static String facilityIdentifier;
     private static final Scanner sc = new Scanner(System.in);
     private static HashMap<LocalDate, byte[]> dailyPseudonyms;
     private static HashMap<LocalDate, byte[]> dailyRandoms;
-    private static byte[] QRCodeForToday;
     private static final int randomLength = 128;
 
     public FacilityControllerImpl() {
@@ -53,8 +50,8 @@ public class FacilityControllerImpl {
             //Ask for the facility identifier
             getFacilityIdentifier();
 
-            //Connect to the registrar server
-            connectToRegistrar();
+            //Connect to the registrar services
+            connectionController.connectToServices();
 
             //Choose between registering and getting the QR-code
             while (true) {
@@ -109,15 +106,10 @@ public class FacilityControllerImpl {
         }
     }
 
-    private void connectToRegistrar() throws RemoteException, NotBoundException {
-        Registry registry = LocateRegistry.getRegistry("localhost", registrarPort);
-        registrarConnection = (RegistrarConnection) registry
-                .lookup("RegistrarService");
-    }
 
     private void registerFacility() throws Exception {
         try {
-            registrarConnection.registerCateringFacility(facilityIdentifier);
+            connectionController.registerCateringFacility(facilityIdentifier);
             System.out.println("Registered facility");
         } catch (Exception e) {
             handleException(e);
@@ -151,7 +143,7 @@ public class FacilityControllerImpl {
     }
 
     private byte[] getTodayRandom(LocalDate cal) {
-        //test if todays random is already created
+        //test if today's random is already created
         if (dailyRandoms.get(cal) == null) {
             //Generate new random key
             SecureRandom secureRandom = new SecureRandom();
@@ -176,7 +168,7 @@ public class FacilityControllerImpl {
         int year = day.getYear();
 
         //Get the pseudonyms from the registrar service
-        PseudonymUpdate pseudonymUpdate = registrarConnection.getPseudonyms(facilityIdentifier,year, monthIndex);
+        PseudonymUpdate pseudonymUpdate = connectionController.getPseudonyms(facilityIdentifier,year, monthIndex);
 
         //Set the pseudonyms hashmap
         dailyPseudonyms = pseudonymUpdate.getPseudonymHashmap();

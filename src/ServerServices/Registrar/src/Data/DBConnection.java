@@ -51,7 +51,7 @@ public class DBConnection {
         //Run query
         ResultSet response = stmt.executeQuery();
 
-        if (response.next() == false) return false;
+        if (!response.next()) return false;
         else return true;
     }
 
@@ -64,7 +64,7 @@ public class DBConnection {
     }
 
     public void addPseudonyms(String facilityIdentifier, HashMap<LocalDate,byte[]> facilityPseudonyms) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO pseudonyms(catering_identifier, date, pseudonym) VALUES (?, ?, ?)");
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO pseudonyms(facility_identifier, date, pseudonym) VALUES (?, ?, ?)");
 
         for (Map.Entry<LocalDate, byte[]> entry : facilityPseudonyms.entrySet()) {
             LocalDate day = entry.getKey();
@@ -82,9 +82,9 @@ public class DBConnection {
         stmt.executeBatch();
     }
 
-    public void getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws SQLException {
+    public HashMap<LocalDate,byte[]> getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws SQLException {
         //Create query
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND MONTH(date) = ? AND YEAR(date) = ?");
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND EXTRACT(MONTH from date) = ? AND EXTRACT(YEAR from date) = ?");
         stmt.setString(1, facilityIdentifier);
         stmt.setInt(2, monthIndex);
         stmt.setInt(3, year);
@@ -93,6 +93,17 @@ public class DBConnection {
         ResultSet response = stmt.executeQuery();
 
 
+        //Create the pseudonym hashmap
+        HashMap<LocalDate, byte[]> pseudonyms = new HashMap<>();
+        while (response.next()) {
+            LocalDate day = response.getDate("date").toLocalDate();
+            byte[] pseudonym = response.getBytes("pseudonym");
+
+            pseudonyms.put(day, pseudonym);
+        }
+
+        if (pseudonyms.size() == 0) throw new IllegalArgumentException("Pseudonyms not yet created");
+        else return pseudonyms;
     }
 
 
@@ -107,7 +118,7 @@ public class DBConnection {
         //Run query
         ResultSet response = stmt.executeQuery();
 
-        if (response == null) return false;
+        if (!response.next()) return false;
         else return true;
     }
 
@@ -119,11 +130,11 @@ public class DBConnection {
         stmt.executeUpdate();
     }
 
-    public void addTokens(String userIdentifier,Calendar day, ArrayList<byte[]> tokens) throws SQLException {
+    public void addTokens(String userIdentifier, LocalDate day, ArrayList<byte[]> tokens) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO tokens(user_identifier, token, date) VALUES (?, ?, ?)");
 
         //Generate sql compatible date from date
-        java.sql.Date sqlDate = new java.sql.Date(day.getTime().getTime());
+        java.sql.Date sqlDate = java.sql.Date.valueOf(day);
 
         for (byte[] token : tokens) {
             stmt.setString(1, userIdentifier);
@@ -136,4 +147,24 @@ public class DBConnection {
     }
 
 
+    public ArrayList<byte[]> getTokens(String userIdentifier, LocalDate date) throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM tokens WHERE user_identifier = ? AND date = ?");
+        stmt.setString(1, userIdentifier);
+        stmt.setDate(2, Date.valueOf(date));
+
+        //Run query
+        ResultSet response = stmt.executeQuery();
+
+
+        //Create the pseudonym hashmap
+        ArrayList<byte[]> tokens = new ArrayList<>();
+        while (response.next()) {
+            byte[] token = response.getBytes("token");
+            tokens.add(token);
+        }
+
+        if (tokens.size() == 0) throw new IllegalArgumentException("Pseudonyms not yet created");
+        else return tokens;
+    }
 }
