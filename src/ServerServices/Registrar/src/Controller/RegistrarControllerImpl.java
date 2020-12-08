@@ -117,7 +117,7 @@ public class RegistrarControllerImpl implements RegistrarController {
     }
 
     private void handleException(Exception e) {
-        e.printStackTrace();
+        System.out.println(e.getMessage());
     }
 
 
@@ -141,7 +141,7 @@ public class RegistrarControllerImpl implements RegistrarController {
 
             System.out.println("New facility registered: " + facilityIdentifier);
         } catch (IllegalArgumentException | AlreadyRegisteredException e) {
-            System.out.println(facilityIdentifier + e.getMessage());
+            throw e;
         } catch (Exception e) {
             handleException(e);
             throw e;
@@ -192,7 +192,7 @@ public class RegistrarControllerImpl implements RegistrarController {
             }
 
             return new PseudonymUpdate(facilityPseudonyms);
-        } catch (IllegalArgumentException e) {
+        } catch (NotRegisteredException e) {
             throw e;
         } catch (Exception e) {
             handleException(e);
@@ -299,6 +299,8 @@ public class RegistrarControllerImpl implements RegistrarController {
             dbConnection.registerUser(userIdentifier);
 
             System.out.println("New user registered: " + userIdentifier);
+        } catch (IllegalArgumentException | AlreadyRegisteredException e) {
+            throw e;
         } catch (Exception e) {
             handleException(e);
             throw e;
@@ -364,7 +366,7 @@ public class RegistrarControllerImpl implements RegistrarController {
             //Return a token update message to the user
             TokenUpdate tokenUpdate = new TokenUpdate(tokens, signatures);
             return tokenUpdate;
-        } catch (IllegalArgumentException e) {
+        } catch (NotRegisteredException e) {
             throw e;
         } catch (Exception e) {
             handleException(e);

@@ -1,5 +1,7 @@
 package Controller;
 
+import com.google.zxing.NotFoundException;
+
 import java.io.IOException;
 
 public interface UserController {
@@ -11,5 +13,5 @@ public interface UserController {
     void setUserIdentifier(String phoneNumber);
 
     void getTodaysTokens() throws Exception;
-    void scanQR();
+    void scanQR() throws NotFoundException, IOException;
 }

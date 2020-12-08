@@ -2,6 +2,7 @@ package GUI.App;
 
 import Controller.UserController;
 import Controller.UserControllerImpl;
+import com.google.zxing.NotFoundException;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,6 +14,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +31,17 @@ public class AppController {
     }
 
     @FXML
-    public void handleQRScanButton(javafx.event.ActionEvent actionEvent) {
-        userController.scanQR();
+    public void handleQRScanButton(javafx.event.ActionEvent actionEvent)  {
+        try {
+            userController.scanQR();
+        } catch (NotFoundException | IOException e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("ERROR");
+            alert.setHeaderText(null);
+            alert.setContentText("Something went wrong");
+            alert.show();
+            return;
+        }
     }
 
     public void updateTokenCount(int numberOfTokens) {

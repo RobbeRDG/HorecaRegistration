@@ -6,6 +6,8 @@ import Connection.ConnectionControllerImpl;
 import GUI.App.AppController;
 import GUI.Login.LoginController;
 import Objects.TokenWallet;
+import QRReader.QRReader;
+import com.google.zxing.NotFoundException;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -13,9 +15,11 @@ import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.IOException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Base64;
 
 public class UserControllerImpl extends Application implements UserController{
     private static final ConnectionController connectionController = new ConnectionControllerImpl();
@@ -26,6 +30,7 @@ public class UserControllerImpl extends Application implements UserController{
     private static Pane appPane;
     private static String userIdentifier;
     private static final TokenWallet tokenWallet = new TokenWallet();
+    private static final QRReader qrReader = new QRReader();
 
 
     public static void main(String[] args) {
@@ -116,11 +121,28 @@ public class UserControllerImpl extends Application implements UserController{
     }
 
     @Override
-    public void scanQR() {
+    public void scanQR() throws NotFoundException, IOException {
         //Open the File chooser
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Open Resource File");
-        fileChooser.showOpenDialog(primaryStage);
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("PNG Files", "*.png")
+        );
+        fileChooser.setTitle("Open QR code png File");
+        File QRCodeFile = fileChooser.showOpenDialog(primaryStage);
+
+        //Get the QR code string from the image
+        String QRCodeString = qrReader.readQRCodeString(QRCodeFile);
+
+        //Decode the QR string into the Random key, facility identifier and pseudonym
+        decodeQRString(QRCodeString);
+    }
+
+    private void decodeQRString(String qrCodeString) {
+        String[] QRStringArray = qrCodeString.split(",");
+
+        byte[] randomKey = Base64.getDecoder().decode(QRStringArray[0]);
+        String facilityIdentifier = new String(Base64.getDecoder().decode(QRStringArray[1]));
+        byte[] facilityPseudonym = Base64.getDecoder().decode(QRStringArray[2]);
     }
 
 }
