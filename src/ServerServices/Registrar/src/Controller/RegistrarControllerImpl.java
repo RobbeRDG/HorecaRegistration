@@ -45,8 +45,12 @@ public class RegistrarControllerImpl implements RegistrarController {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////
+    ///         REGISTRAR LOGIC
+    ///////////////////////////////////////////////////////////////////
+
     private static PublicKey readPublicKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, ClassNotFoundException {
-        InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarMasterPublic.txt");
+        InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarPublic.txt");
         ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
         try {
             BigInteger m = (BigInteger) oin.readObject();
@@ -63,7 +67,7 @@ public class RegistrarControllerImpl implements RegistrarController {
     }
 
     private static PrivateKey readPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, ClassNotFoundException {
-        InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarMasterPrivate.txt");
+        InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarPrivate.txt");
         ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
         try {
             BigInteger m = (BigInteger) oin.readObject();
@@ -98,6 +102,8 @@ public class RegistrarControllerImpl implements RegistrarController {
 
             //Start the connection server
             connectionController.startServerConnections();
+
+            System.out.println("Registrar ready");
         } catch (Exception e){
             System.out.println("Startup failed: " + e.getMessage());
         }

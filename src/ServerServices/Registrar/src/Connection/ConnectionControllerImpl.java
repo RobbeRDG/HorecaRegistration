@@ -44,7 +44,7 @@ public class ConnectionControllerImpl implements ConnectionController{
         Registry userRegistry = LocateRegistry.createRegistry(registrarUserRMIPort);
         userRegistry.rebind("RegistrarUserService", userStub);
 
-        System.out.println("Started RMI servers");
+        System.out.println("Started all RMI server instances");
     }
 
     @Override

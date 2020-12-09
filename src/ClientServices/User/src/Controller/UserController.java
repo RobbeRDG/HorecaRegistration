@@ -13,5 +13,5 @@ public interface UserController {
     void setUserIdentifier(String phoneNumber);
 
     void getTodaysTokens() throws Exception;
-    void scanQR() throws NotFoundException, IOException;
+    void registerToFacility() throws Exception;
 }

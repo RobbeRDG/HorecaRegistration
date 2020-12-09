@@ -61,7 +61,7 @@ public class LoginController {
             userController.showApp();
             userController.getTodaysTokens();
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Error");
+            alert.setTitle("NEW USER");
             alert.setHeaderText(null);
             alert.setContentText("A new user has been created");
             alert.show();
@@ -72,7 +72,7 @@ public class LoginController {
             return;
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Already registered");
+            alert.setTitle("ERROR");
             alert.setHeaderText(null);
             alert.setContentText("Something went wrong");
             alert.show();

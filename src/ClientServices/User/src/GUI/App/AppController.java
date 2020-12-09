@@ -31,14 +31,14 @@ public class AppController {
     }
 
     @FXML
-    public void handleQRScanButton(javafx.event.ActionEvent actionEvent)  {
+    public void handleRegisterToFacilityButton(javafx.event.ActionEvent actionEvent)  {
         try {
-            userController.scanQR();
-        } catch (NotFoundException | IOException e) {
+            userController.registerToFacility();
+        } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("ERROR");
             alert.setHeaderText(null);
-            alert.setContentText("Something went wrong");
+            alert.setContentText(e.getMessage());
             alert.show();
             return;
         }
