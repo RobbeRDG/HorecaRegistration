@@ -4,6 +4,7 @@ import Common.Exceptions.AlreadyRegisteredException;
 import Common.Exceptions.NotRegisteredException;
 import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
+import Common.Objects.Token;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Data.DBConnection;
@@ -97,15 +98,17 @@ public class RegistrarControllerImpl implements RegistrarController {
     private void start() {
         try {
             System.out.println("Starting Registar service...");
+
             //Connect to the database
             dbConnection.connectToDatabase();
 
-            //Start the connection server
+            //Start the server and client connections
             connectionController.startServerConnections();
+            connectionController.startClientConnections();
 
             System.out.println("Registrar ready");
         } catch (Exception e){
-            System.out.println("Startup failed: " + e.getMessage());
+            handleException(e);
         }
     }
 
@@ -123,7 +126,7 @@ public class RegistrarControllerImpl implements RegistrarController {
     }
 
     private void handleException(Exception e) {
-        System.out.println(e.getMessage());
+        e.printStackTrace();
     }
 
 
@@ -337,9 +340,21 @@ public class RegistrarControllerImpl implements RegistrarController {
             //test if the user is registered
             if (!dbConnection.containsUser(userIdentifier)) throw new NotRegisteredException("Couldn't create tokens: user not registered");
 
+            Signature sign = Signature.getInstance("SHA256withRSA");
+            sign.initSign(masterKeyPrivate);
+
             try {
                 //Test if tokens are already created
                 tokens = dbConnection.getTokens(userIdentifier, date);
+
+                //Create the signature for the tokens
+                for ( byte[] token : tokens) {
+                    sign.update(token);
+                    byte[] signature = sign.sign();
+
+                    //Place the token and signature in signatures
+                    signatures.put(token, signature);
+                }
             } catch (IllegalArgumentException e) {
                 //If no tokens already exist for today, generate them
                 SecureRandom secureRandom = new SecureRandom();
@@ -348,29 +363,35 @@ public class RegistrarControllerImpl implements RegistrarController {
                     byte[] token = new byte[tokenLength];
                     secureRandom.nextBytes(token);
 
+                    //Create signature for token
+                    sign.update(token);
+                    byte[] signature = sign.sign();
+
                     //Add the token to the arraylist
                     tokens.add(token);
+                    //Place the token and signature in signatures
+                    signatures.put(token, signature);
                 }
 
                 //Save the generated tokens in the db
                 dbConnection.addTokens(userIdentifier, date, tokens);
-            }
 
-            //Create the signature for the tokens
-            Signature sign = Signature.getInstance("SHA256withRSA");
-            sign.initSign(masterKeyPrivate);
-            for ( byte[] token : tokens) {
-                sign.update(token);
-                byte[] signature = sign.sign();
-
-                //Place the token and signature in signatues
-                signatures.put(token, signature);
+                //Send the generated tokens to the mixing proxy
+                connectionController.addTokensToMixingProxy(date, tokens);
             }
 
 
+
+            //Generate the token objects
+            ArrayList<Token> tokenArrayList = new ArrayList<>();
+            for (byte[] token : tokens) {
+                byte[] signature = signatures.get(token);
+
+                tokenArrayList.add(new Token(token, signature, date, false));
+            }
 
             //Return a token update message to the user
-            TokenUpdate tokenUpdate = new TokenUpdate(tokens, signatures);
+            TokenUpdate tokenUpdate = new TokenUpdate(tokenArrayList);
             return tokenUpdate;
         } catch (NotRegisteredException e) {
             throw e;
@@ -379,7 +400,6 @@ public class RegistrarControllerImpl implements RegistrarController {
             throw new Exception("Couldn't create new tokens: Something went wrong");
         }
     }
-
 
 
 }

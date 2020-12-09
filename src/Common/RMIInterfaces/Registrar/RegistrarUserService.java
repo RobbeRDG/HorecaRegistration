@@ -1,4 +1,4 @@
-package Connection.Registrar.Facility;
+package Common.RMIInterfaces.Registrar;
 
 import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.HashMap;
 
-public interface RegistrarFacilityService extends Remote {
-    void registerCateringFacility(String facilityIdentifier) throws Exception;
-    PseudonymUpdate getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws Exception;
+public interface RegistrarUserService extends Remote {
+    void registerUser(String userIdentifier) throws Exception;
+    TokenUpdate getTokens(String userIdentifier, LocalDate date) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, Exception;
 }

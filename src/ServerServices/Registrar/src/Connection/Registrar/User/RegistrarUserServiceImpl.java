@@ -1,6 +1,7 @@
 package Connection.Registrar.User;
 
 import Common.Messages.TokenUpdate;
+import Common.RMIInterfaces.Registrar.RegistrarUserService;
 import Connection.ConnectionController;
 
 import java.time.LocalDate;

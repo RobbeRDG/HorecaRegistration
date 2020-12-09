@@ -3,6 +3,7 @@ package Controller;
 import Common.Exceptions.AlreadyRegisteredException;
 import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
+import Common.Objects.Token;
 
 import java.sql.SQLException;
 import java.time.LocalDate;

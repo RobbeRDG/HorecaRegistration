@@ -3,25 +3,30 @@ package Connection;
 import Common.Exceptions.AlreadyRegisteredException;
 import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
-import Connection.Registrar.Facility.RegistrarFacilityService;
+import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
+import Common.RMIInterfaces.Registrar.RegistrarFacilityService;
 import Connection.Registrar.Facility.RegistrarFacilityServiceImpl;
-import Connection.Registrar.User.RegistrarUserService;
+import Common.RMIInterfaces.Registrar.RegistrarUserService;
 import Connection.Registrar.User.RegistrarUserServiceImpl;
 import Controller.RegistrarController;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 public class ConnectionControllerImpl implements ConnectionController{
     private static RegistrarController registrarController;
     private static RegistrarFacilityService registrarFacilityServer;
     private static RegistrarUserService registrarUserServer;
-    private static final int registrarFacilityRMIPort = 2222;
-    private static final int registrarUserRMIPort = 3333;
+    private static MixingProxyRegistrarService mixingProxyRegistrarService;
+    private static final int registrarFacilityRMIServerPort = 2222;
+    private static final int registrarUserRMIServerPort = 3333;
+    private static final int mixingProxyRegistrarRMIClientPort = 5555;
 
     public ConnectionControllerImpl(RegistrarController registrarController) {
         this.registrarController = registrarController;
@@ -34,17 +39,29 @@ public class ConnectionControllerImpl implements ConnectionController{
         RegistrarFacilityService facilityStub = (RegistrarFacilityService) UnicastRemoteObject
                 .exportObject((RegistrarFacilityService) registrarFacilityServer, 0);
 
-        Registry facilityRegistry = LocateRegistry.createRegistry(registrarFacilityRMIPort);
+        Registry facilityRegistry = LocateRegistry.createRegistry(registrarFacilityRMIServerPort);
         facilityRegistry.rebind("RegistrarFacilityService", facilityStub);
 
         //Start the user server
         RegistrarUserService userStub = (RegistrarUserService) UnicastRemoteObject
                 .exportObject((RegistrarUserService) registrarUserServer, 0);
 
-        Registry userRegistry = LocateRegistry.createRegistry(registrarUserRMIPort);
+        Registry userRegistry = LocateRegistry.createRegistry(registrarUserRMIServerPort);
         userRegistry.rebind("RegistrarUserService", userStub);
 
         System.out.println("Started all RMI server instances");
+    }
+
+    public void startClientConnections() throws RemoteException, NotBoundException {
+        //Connect to the mixing proxy service
+        Registry mixingProxyRegistrarRegister = LocateRegistry.getRegistry("localhost", mixingProxyRegistrarRMIClientPort);
+        mixingProxyRegistrarService = (MixingProxyRegistrarService) mixingProxyRegistrarRegister
+                .lookup("MixingProxyRegistrarService");
+    }
+
+    @Override
+    public void addTokensToMixingProxy(LocalDate date, ArrayList<byte[]> tokens) throws Exception {
+        mixingProxyRegistrarService.addTokens(date, tokens);
     }
 
     @Override
@@ -66,4 +83,5 @@ public class ConnectionControllerImpl implements ConnectionController{
     public TokenUpdate getTokens(String userIdentifier, LocalDate date) throws Exception {
         return registrarController.getTokens(userIdentifier, date);
     }
+
 }

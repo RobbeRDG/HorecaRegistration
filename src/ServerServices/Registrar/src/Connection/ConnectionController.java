@@ -3,10 +3,13 @@ package Connection;
 import Common.Exceptions.AlreadyRegisteredException;
 import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
+import Common.Objects.Token;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 public interface ConnectionController {
     void startServerConnections() throws RemoteException;
@@ -18,4 +21,8 @@ public interface ConnectionController {
     void registerUser(String userIdentifier) throws SQLException, AlreadyRegisteredException;
 
     TokenUpdate getTokens(String userIdentifier, LocalDate date) throws Exception;
+
+    void startClientConnections() throws RemoteException, NotBoundException;
+
+    void addTokensToMixingProxy(LocalDate date, ArrayList<byte[]> tokens) throws Exception;
 }

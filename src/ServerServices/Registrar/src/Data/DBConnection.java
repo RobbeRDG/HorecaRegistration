@@ -1,5 +1,7 @@
 package Data;
 
+import Common.Objects.Token;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -39,7 +41,6 @@ public class DBConnection {
     }
 
 
-
     ///////////////////////////////////////////////////////////////////
     ///         CATERING FACILITY ENROLLMENT
     ///////////////////////////////////////////////////////////////////
@@ -63,7 +64,7 @@ public class DBConnection {
         stmt.executeUpdate();
     }
 
-    public void addPseudonyms(String facilityIdentifier, HashMap<LocalDate,byte[]> facilityPseudonyms) throws SQLException {
+    public void addPseudonyms(String facilityIdentifier, HashMap<LocalDate, byte[]> facilityPseudonyms) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO pseudonyms(facility_identifier, date, pseudonym) VALUES (?, ?, ?)");
 
         for (Map.Entry<LocalDate, byte[]> entry : facilityPseudonyms.entrySet()) {
@@ -82,7 +83,7 @@ public class DBConnection {
         stmt.executeBatch();
     }
 
-    public HashMap<LocalDate,byte[]> getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws SQLException {
+    public HashMap<LocalDate, byte[]> getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws SQLException {
         //Create query
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND EXTRACT(MONTH from date) = ? AND EXTRACT(YEAR from date) = ?");
         stmt.setString(1, facilityIdentifier);

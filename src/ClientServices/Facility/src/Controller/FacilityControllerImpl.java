@@ -3,13 +3,8 @@ package Controller;
 import Common.Messages.PseudonymUpdate;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
-import Connection.Registrar.Facility.RegistrarFacilityService;
-import QRGenerator.QRGenerator;
+import Controller.HelperObjects.QRGenerator;
 
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.HashMap;

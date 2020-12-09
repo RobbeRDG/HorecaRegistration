@@ -1,12 +1,15 @@
 package Controller;
 
+import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
+import Common.Objects.Capsule;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
+import Controller.HelperObjects.SymbolGenerator;
 import GUI.App.AppController;
 import GUI.Login.LoginController;
-import Common.Objects.TokenWallet;
-import QRReader.QRReader;
+import Controller.HelperObjects.TokenWallet;
+import Controller.HelperObjects.QRReader;
 import com.google.zxing.NotFoundException;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -22,7 +25,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.Base64;
 
 public class UserControllerImpl extends Application implements UserController{
     private static final ConnectionController connectionController = new ConnectionControllerImpl();
@@ -34,6 +36,7 @@ public class UserControllerImpl extends Application implements UserController{
     private static String userIdentifier;
     private static final TokenWallet tokenWallet = new TokenWallet();
     private static final QRReader qrReader = new QRReader();
+    private static final SymbolGenerator symbolGenerator = new SymbolGenerator();
 
     ///////////////////////////////////////////////////////////////////
     ///         INTERNAL USER LOGIC
@@ -54,7 +57,7 @@ public class UserControllerImpl extends Application implements UserController{
             this.primaryStage = primaryStage;
 
             //Connect to the services
-            connectionController.connectToServices();
+            connectionController.startClientConnections();
 
             //load the chat and login controller
             loadControllers();
@@ -173,8 +176,8 @@ public class UserControllerImpl extends Application implements UserController{
         //Get the QR code string from the image
         String QRCodeString = qrReader.readQRCodeString(QRCodeFile);
 
-        //Decode the QR string into the Random key, facility identifier and pseudonym
-        decodeQRString(QRCodeString);
+        //place the facility information in the wallet
+        tokenWallet.setCurrentFacility(QRCodeString);
     }
 
     @Override
@@ -183,21 +186,22 @@ public class UserControllerImpl extends Application implements UserController{
             //Scan the facility QR code
             scanQR();
 
+            //Activate the tokenwallet
+            Capsule capsule = tokenWallet.activateTokens();
 
+            //send the generated capsule to the mixing proxy
+            CapsuleVerification verification = connectionController.registerCapsule(capsule);
+
+            //Generate symbol from the verification bytes
+            symbolGenerator.generateConfirmationSymbol(verification.getKeySignature());
+            //Update the GUI
+            appController.updateGUI()
         } catch ( NotFoundException | IOException e) {
             handleException(e);
-            throw new Exception("Can't register to restaurant: QR code readable");
+            throw new Exception("Can't register to restaurant: QR code not readable");
         }
 
 
-    }
-
-    private void decodeQRString(String qrCodeString) {
-        String[] QRStringArray = qrCodeString.split(",");
-
-        byte[] randomKey = Base64.getDecoder().decode(QRStringArray[0]);
-        String facilityIdentifier = new String(Base64.getDecoder().decode(QRStringArray[1]));
-        byte[] facilityPseudonym = Base64.getDecoder().decode(QRStringArray[2]);
     }
 
 }

@@ -1,4 +1,4 @@
-package QRGenerator;
+package Controller.HelperObjects;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;

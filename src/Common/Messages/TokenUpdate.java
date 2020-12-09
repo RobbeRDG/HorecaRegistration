@@ -11,15 +11,8 @@ public class TokenUpdate implements Serializable {
     static final long serialVersionUID = 1L;
     private ArrayList<Token> tokenList;
 
-    public TokenUpdate(ArrayList<byte[]> tokens, HashMap<byte[], byte[]> tokenSignatures) {
-        ArrayList<Token> tokenArrayList = new ArrayList<>();
-        for (byte[] token : tokens) {
-            byte[] signature = tokenSignatures.get(token);
-
-            tokenArrayList.add(new Token(token, signature, false));
-        }
-
-        tokenList = tokenArrayList;
+    public TokenUpdate(ArrayList<Token> tokens) {
+        tokenList = tokens;
     }
 
     public ArrayList<Token> getTokens() {

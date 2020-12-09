@@ -1,22 +1,31 @@
 package Connection;
 
-import Connection.MixingProxy.MixingProxyUserService;
-import Connection.MixingProxy.MixingProxyUserServiceImpl;
+import Common.Messages.CapsuleVerification;
+import Common.Objects.Capsule;
+import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
+import Connection.MixingProxy.Registrar.MixingProxyRegistrarServiceImpl;
+import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
+import Connection.MixingProxy.User.MixingProxyUserServiceImpl;
 import Controller.MixingProxyController;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalDate;
+import java.util.ArrayList;
 
 public class ConnectionControllerImpl implements ConnectionController {
     private static MixingProxyController mixingProxyController;
     private static MixingProxyUserService mixingProxyUserServer;
-    private static final int mixingProxyUserServicePort = 4444;
+    private static MixingProxyRegistrarService mixingProxyRegistrarServer;
+    private static final int mixingProxyUserRMIServerPort = 4444;
+    private static final int mixingProxyRegistrarRMIServerPort = 5555;
 
     public ConnectionControllerImpl(MixingProxyController mixingProxyController) {
         this.mixingProxyController = mixingProxyController;
         mixingProxyUserServer = new MixingProxyUserServiceImpl(this);
+        mixingProxyRegistrarServer = new MixingProxyRegistrarServiceImpl(this);
     }
 
     @Override
@@ -25,10 +34,28 @@ public class ConnectionControllerImpl implements ConnectionController {
         MixingProxyUserService mixingProxyUserServiceStub = (MixingProxyUserService) UnicastRemoteObject
                 .exportObject((MixingProxyUserService) mixingProxyUserServer, 0);
 
-        Registry mixingProxyUserServiceRegistry = LocateRegistry.createRegistry(mixingProxyUserServicePort);
+        Registry mixingProxyUserServiceRegistry = LocateRegistry.createRegistry(mixingProxyUserRMIServerPort);
         mixingProxyUserServiceRegistry.rebind("MixingProxyUserService", mixingProxyUserServiceStub);
 
+        //Start the mixing proxy registrar server
+        MixingProxyRegistrarService mixingProxyRegistrarServiceStub = (MixingProxyRegistrarService) UnicastRemoteObject
+                .exportObject((MixingProxyRegistrarService) mixingProxyRegistrarServer, 0);
+
+        Registry mixingProxyRegistrarServiceRegistry = LocateRegistry.createRegistry(mixingProxyRegistrarRMIServerPort);
+        mixingProxyRegistrarServiceRegistry.rebind("MixingProxyRegistrarService", mixingProxyRegistrarServiceStub);
+
+
         System.out.println("Started all RMI server instances");
+    }
+
+    @Override
+    public CapsuleVerification registerToken(Capsule capsule) throws Exception {
+        return mixingProxyController.registerToken(capsule);
+    }
+
+    @Override
+    public void addTokens(LocalDate date, ArrayList<byte[]> tokens) throws Exception {
+        mixingProxyController.addTokens(date, tokens);
     }
 
     public void startClientConnections() {

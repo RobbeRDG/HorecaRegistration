@@ -1,18 +1,25 @@
 package Controller;
 
+import Common.Exceptions.CapsuleNotValidException;
+import Common.Messages.CapsuleVerification;
+import Common.Objects.Capsule;
+import Common.Objects.Token;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Data.DBConnection;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
 
 public class MixingProxyControllerImpl implements MixingProxyController{
     private static DBConnection dbConnection;
@@ -73,14 +80,14 @@ public class MixingProxyControllerImpl implements MixingProxyController{
             mixingProxy.start();
             //registrar.stop();
         } catch (Exception e) {
-            System.out.println("Mixing proxy failed");
-            e.printStackTrace();
+            handleException(e);
         }
     }
 
     private void start() {
         try {
             System.out.println("Starting Mixing proxy service...");
+
             //Connect to the database
             dbConnection.connectToDatabase();
 
@@ -89,7 +96,7 @@ public class MixingProxyControllerImpl implements MixingProxyController{
 
             System.out.println("Mixing proxy ready");
         } catch (Exception e){
-            System.out.println("Startup failed: " + e.getMessage());
+            handleException(e);
         }
     }
 
@@ -106,9 +113,77 @@ public class MixingProxyControllerImpl implements MixingProxyController{
         }
     }
 
-    private void handleException(Exception e) {
-        System.out.println(e.getMessage());
+    private static void handleException(Exception e) {
+        e.printStackTrace();
     }
 
+    ///////////////////////////////////////////////////////////////////
+    ///         TOKEN REGISTRATION
+    ///////////////////////////////////////////////////////////////////
 
+    @Override
+    public CapsuleVerification registerToken(Capsule capsule) throws Exception {
+        try {
+            //Check if the token is valid
+            if (!validateCapsule(capsule)) throw new CapsuleNotValidException("The send capsule is not a valid capsule");
+
+            //Check if the capsule is not already registered
+            if (dbConnection.containsCapsule(capsule)) throw new CapsuleNotValidException("Capsule is already registered");
+
+            //Place the capsule in the db
+            dbConnection.addCapsule(capsule);
+
+            //Return the signed facility key
+            return generateCapsuleVerification(capsule);
+        } catch (CapsuleNotValidException e) {
+            throw e;
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't register tokens : Something went wrong");
+        }
+
+    }
+
+    private CapsuleVerification generateCapsuleVerification(Capsule capsule) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        Signature sign = Signature.getInstance("SHA256withRSA");
+        sign.initSign(mixingProxyPrivateKey);
+
+        //Get the facility key
+        byte[] facilityKey = capsule.getFacilityKey();
+
+        //Sign the facility key
+        sign.update(facilityKey);
+        byte[] keySignature = sign.sign();
+
+        return new CapsuleVerification(facilityKey, keySignature);
+    }
+
+    @Override
+    public void addTokens(LocalDate date, ArrayList<byte[]> tokens) throws Exception {
+        try {
+            dbConnection.addTokens(date, tokens);
+        } catch (Exception e) {
+            handleException(e);;
+        }
+    }
+
+    private boolean validateCapsule(Capsule capsule) throws SQLException {
+        //Extract the capsule contents
+        Token token = capsule.getToken();
+        LocalDateTime startTime = capsule.getStartTime();
+        LocalDateTime stopTime = capsule.getStopTime();
+        byte[] facilityKey = capsule.getFacilityKey();
+
+        //Get the tokenbytes and date from the valid tokens table
+        ResultSet rs = dbConnection.getValidToken(token.getTokenBytes(), token.getDate());
+
+        if (rs.next()) {
+            //Test if the startTime is on the day of the valid token
+            LocalDate validDate = rs.getDate("date").toLocalDate();
+            LocalDate startDate = startTime.toLocalDate();
+
+            return startDate.isEqual(validDate);
+        } else return false;
+
+    }
 }
