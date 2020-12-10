@@ -26,4 +26,13 @@ public class Facility {
     public byte[] getFacilityKey() {
         return facilityKey;
     }
+
+    public String toBase64String() {
+        String randomKeyString = Base64.getEncoder().encodeToString(randomKey);
+        String facilityIdentifierString = Base64.getEncoder().encodeToString(facilityIdentifier.getBytes());
+        String facilityKeyString = Base64.getEncoder().encodeToString(facilityKey);
+
+        return randomKeyString + "," + facilityIdentifierString + "," + facilityKeyString;
+
+    }
 }

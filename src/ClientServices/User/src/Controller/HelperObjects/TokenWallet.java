@@ -5,20 +5,20 @@ import Common.Objects.Capsule;
 import Common.Objects.Facility;
 import Common.Objects.Token;
 
+import java.io.IOException;
 import java.security.*;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class TokenWallet {
-    private static final int tokenDurationInSeconds = 3600;
+    private static final int tokenDurationInSeconds = 60;
     private Facility currentFacility;
     private ArrayList<Token> tokens;
     private Stack<Token> unusedTokens;
     private PublicKey registrarPublicKey;
-    private Token activeToken;
-    private ArrayList<Capsule> usedTokens;
+    private Capsule currentCapsule;
+
 
 
     public TokenWallet() {
@@ -32,10 +32,6 @@ public class TokenWallet {
         //Generate a new random stack
         unusedTokens.addAll(tokenUpdate.getTokens());
         Collections.shuffle(unusedTokens);
-    }
-
-    public int getNumberOfTokens() {
-        return tokens.size();
     }
 
     public boolean signaturesMatch() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
@@ -59,24 +55,34 @@ public class TokenWallet {
         currentFacility = new Facility(qrCodeString);
     }
 
-    public Capsule activateTokens() {
+
+    public Capsule getCapsule() {
         if (currentFacility == null) throw new IllegalArgumentException("Can't activate tokens : no current facility");
         if (unusedTokens.empty()) throw new IllegalArgumentException("Can't activate tokens : no remaining tokens");
 
-        activeToken = unusedTokens.pop();
-        return buildCapsule();
-    }
-
-    private Capsule buildCapsule() {
-        Token token = activeToken;
+        Token selectedToken = unusedTokens.pop();
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime stopTime = startTime.plus(Duration.ofSeconds(tokenDurationInSeconds));
         byte[] facilityKey = currentFacility.getFacilityKey();
 
-        return new Capsule(token, startTime, stopTime, facilityKey);
+        return new Capsule(selectedToken, startTime, stopTime, facilityKey);
     }
 
-    public int getNumberOfRemainingTokens() {
-        return unusedTokens.size();
+    public void setCurrentCapsule(Capsule capsule) throws IOException {
+        currentCapsule = capsule;
+    }
+
+    public Capsule getCurrentCapsule() {
+        return currentCapsule;
+    }
+
+    public void leaveFacility() {
+        //Reset current facility and active capsule
+        this.currentCapsule = null;
+        this.currentFacility = null;
+    }
+
+    public Facility getCurrentFacility() {
+        return currentFacility;
     }
 }

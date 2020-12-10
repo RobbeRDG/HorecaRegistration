@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class DBConnection {
@@ -80,18 +81,18 @@ public class DBConnection {
         //Extract the capsule info for the db tables
         byte[] token = capsule.getToken().getTokenBytes();
         byte[] facilityKey = capsule.getFacilityKey();
-        java.sql.Date startTime = java.sql.Date.valueOf(capsule.getStartTime().toLocalDate());
-        java.sql.Date stopTime = java.sql.Date.valueOf(capsule.getStopTime().toLocalDate());
-        java.sql.Date receivedDate = java.sql.Date.valueOf(LocalDate.now());
+        java.sql.Timestamp startTime = java.sql.Timestamp.valueOf(capsule.getStartTime());
+        java.sql.Timestamp stopTime = java.sql.Timestamp.valueOf(capsule.getStopTime());
+        java.sql.Timestamp receivedTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
 
 
         //Create query
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO capsules(token, facility_key, start_time, stop_time, received_date) VALUES (?, ?, ?, ?, ?)");
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO capsules(token, facility_key, start_time, stop_time, received_time) VALUES (?, ?, ?, ?, ?)");
         stmt.setBytes(1, token);
         stmt.setBytes(2, facilityKey);
-        stmt.setDate(3, startTime);
-        stmt.setDate(4, stopTime);
-        stmt.setDate(5, receivedDate);
+        stmt.setTimestamp(3, startTime);
+        stmt.setTimestamp(4, stopTime);
+        stmt.setTimestamp(5, receivedTime);
 
         stmt.executeUpdate();
     }

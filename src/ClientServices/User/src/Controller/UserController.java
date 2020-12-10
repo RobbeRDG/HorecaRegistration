@@ -14,4 +14,7 @@ public interface UserController {
 
     void getTodaysTokens() throws Exception;
     void registerToFacility() throws Exception;
+
+    void leaveFacility() throws Exception;
+    void refreshToken();
 }

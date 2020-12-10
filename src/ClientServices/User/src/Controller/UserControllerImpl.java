@@ -1,19 +1,19 @@
 package Controller;
 
+import Common.Exceptions.CapsuleNotValidException;
 import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
 import Common.Objects.Capsule;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
-import Controller.HelperObjects.SymbolGenerator;
+import Controller.HelperObjects.*;
 import GUI.App.AppController;
 import GUI.Login.LoginController;
-import Controller.HelperObjects.TokenWallet;
-import Controller.HelperObjects.QRReader;
 import com.google.zxing.NotFoundException;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -25,6 +25,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
+import java.sql.Date;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Timer;
 
 public class UserControllerImpl extends Application implements UserController{
     private static final ConnectionController connectionController = new ConnectionControllerImpl();
@@ -37,6 +41,8 @@ public class UserControllerImpl extends Application implements UserController{
     private static final TokenWallet tokenWallet = new TokenWallet();
     private static final QRReader qrReader = new QRReader();
     private static final SymbolGenerator symbolGenerator = new SymbolGenerator();
+    private static final FacilityVisitLogger facilityVisitLogger = new FacilityVisitLogger();
+    private static Timer replaceTokenTimer;
 
     ///////////////////////////////////////////////////////////////////
     ///         INTERNAL USER LOGIC
@@ -142,6 +148,7 @@ public class UserControllerImpl extends Application implements UserController{
     @Override
     public void setUserIdentifier(String phoneNumber) {
         userIdentifier = phoneNumber;
+        facilityVisitLogger.setLogFileName(phoneNumber);
     }
 
     @Override
@@ -154,15 +161,61 @@ public class UserControllerImpl extends Application implements UserController{
 
             //Test if the signatures match
             if (!tokenWallet.signaturesMatch()) throw new Exception("Couldn't get today's tokens: signatures don't match");
-
-            //Update the token count in the GUI
-            appController.updateTokenCount(tokenWallet.getNumberOfTokens());
         } catch (Exception e) {
             handleException(e);
             throw e;
         }
 
     }
+
+    @Override
+    public void refreshToken() {
+        try {
+            //Run through all capsule register logic
+            registerCapsuleLogic();
+        } catch (Exception e) {
+            handleException(e);
+        }
+    }
+
+
+    @Override
+    public void registerToFacility() throws Exception {
+        try {
+            //Scan the facility QR code
+            scanQR();
+
+            //Initialize the facility visit logger
+            facilityVisitLogger.startVisit(tokenWallet.getCurrentFacility());
+
+            //Run through all capsule register logic
+            registerCapsuleLogic();
+        } catch ( NotFoundException | IOException e) {
+            handleException(e);
+            throw new Exception("Can't register to restaurant: QR code not readable");
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Can't register to restaurant: Something went wrong");
+        }
+    }
+
+    private void registerCapsuleLogic() throws Exception {
+        //Verify a capsule to the mixing proxy
+        CapsuleVerification verification = registerToMixingProxy();
+
+        //Generate symbol from the verification bytes
+        ImageView symbol = symbolGenerator.generateConfirmationSymbol(verification.getKeySignature());
+
+        //Update the GUI
+        appController.tokenUp(tokenWallet.getCurrentCapsule().getStartTime(), tokenWallet.getCurrentCapsule().getStopTime(), symbol);
+
+        //Set a timer to update the token when current one expires
+        java.util.Date refreshDate = Date.from(tokenWallet.getCurrentCapsule().getStopTime().atZone(ZoneId.systemDefault()).toInstant());
+        replaceTokenTimer = new Timer();
+        replaceTokenTimer.schedule(new RefreshTokenCaller(this), refreshDate);
+    }
+
+
 
     private void scanQR() throws NotFoundException, IOException {
         //Open the File chooser
@@ -181,27 +234,43 @@ public class UserControllerImpl extends Application implements UserController{
     }
 
     @Override
-    public void registerToFacility() throws Exception {
+    public void leaveFacility() throws Exception {
         try {
-            //Scan the facility QR code
-            scanQR();
+            //Cancel the token refresh task
+            replaceTokenTimer.cancel();
 
-            //Activate the tokenwallet
-            Capsule capsule = tokenWallet.activateTokens();
+            //Conclude the visit in the tokenwallet
+            tokenWallet.leaveFacility();
 
-            //send the generated capsule to the mixing proxy
-            CapsuleVerification verification = connectionController.registerCapsule(capsule);
+            //Conclude the visit in the visit logger
+            facilityVisitLogger.stopVisit();
 
-            //Generate symbol from the verification bytes
-            symbolGenerator.generateConfirmationSymbol(verification.getKeySignature());
             //Update the GUI
-            appController.updateGUI()
-        } catch ( NotFoundException | IOException e) {
+            appController.tokenDown();
+        } catch (Exception e) {
             handleException(e);
-            throw new Exception("Can't register to restaurant: QR code not readable");
+            throw new Exception("Can't execute leave facility logic: Something went wrong");
         }
-
-
     }
+
+
+
+    public CapsuleVerification registerToMixingProxy() throws Exception {
+        while (true) {
+            try {
+                //Get a capsule from the tokenwallet
+                Capsule capsule = tokenWallet.getCapsule();
+                //send the generated capsule to the mixing proxy
+                CapsuleVerification verification = connectionController.registerCapsule(capsule);
+                //Set the accepted capsule as active capsule in the tokenwallet
+                tokenWallet.setCurrentCapsule(capsule);
+
+                return verification;
+            } catch (CapsuleNotValidException e) {
+                //Start over
+            }
+        }
+    }
+
 
 }
