@@ -65,6 +65,11 @@ public class ConnectionControllerImpl implements ConnectionController{
     }
 
     @Override
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+        return registrarController.getFacilityPseudonym(facilityIdentifier, date);
+    }
+
+    @Override
     public void registerCateringFacility(String facilityIdentifier) throws Exception {
         registrarController.registerCateringFacility(facilityIdentifier);
     }

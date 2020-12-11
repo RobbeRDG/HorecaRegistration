@@ -3,7 +3,8 @@ package Controller;
 import Common.Exceptions.CapsuleNotValidException;
 import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
-import Common.Objects.Capsule;
+import Common.Objects.CapsuleLog;
+import Common.Objects.FacilityRegisterInformation;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Controller.HelperObjects.*;
@@ -23,11 +24,11 @@ import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.sql.Date;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Timer;
 
 public class UserControllerImpl extends Application implements UserController{
@@ -42,6 +43,7 @@ public class UserControllerImpl extends Application implements UserController{
     private static final QRReader qrReader = new QRReader();
     private static final SymbolGenerator symbolGenerator = new SymbolGenerator();
     private static final FacilityVisitLogger facilityVisitLogger = new FacilityVisitLogger();
+    private static final SpentCapsuleLogger spentCapsuleLogger = new SpentCapsuleLogger();
     private static Timer replaceTokenTimer;
 
     ///////////////////////////////////////////////////////////////////
@@ -160,7 +162,7 @@ public class UserControllerImpl extends Application implements UserController{
             tokenWallet.updateTokens(update);
 
             //Test if the signatures match
-            if (!tokenWallet.signaturesMatch()) throw new Exception("Couldn't get today's tokens: signatures don't match");
+            if (!tokenWallet.signaturesMatch()) throw new SignatureException("Couldn't get today's tokens: signatures don't match");
         } catch (Exception e) {
             handleException(e);
             throw e;
@@ -183,10 +185,13 @@ public class UserControllerImpl extends Application implements UserController{
     public void registerToFacility() throws Exception {
         try {
             //Scan the facility QR code
-            scanQR();
+            FacilityRegisterInformation currentFacilityRegisterInformation = scanQR();
+
+            //place the facility information in the wallet
+            tokenWallet.setCurrentFacility(currentFacilityRegisterInformation);
 
             //Initialize the facility visit logger
-            facilityVisitLogger.startVisit(tokenWallet.getCurrentFacility());
+            facilityVisitLogger.startVisit(currentFacilityRegisterInformation);
 
             //Run through all capsule register logic
             registerCapsuleLogic();
@@ -203,6 +208,9 @@ public class UserControllerImpl extends Application implements UserController{
         //Verify a capsule to the mixing proxy
         CapsuleVerification verification = registerToMixingProxy();
 
+        //Log the new Capsule
+        spentCapsuleLogger.logCapsule(tokenWallet.getCurrentCapsule());
+
         //Generate symbol from the verification bytes
         ImageView symbol = symbolGenerator.generateConfirmationSymbol(verification.getKeySignature());
 
@@ -217,7 +225,7 @@ public class UserControllerImpl extends Application implements UserController{
 
 
 
-    private void scanQR() throws NotFoundException, IOException {
+    private FacilityRegisterInformation scanQR() throws NotFoundException, IOException {
         //Open the File chooser
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(
@@ -229,8 +237,8 @@ public class UserControllerImpl extends Application implements UserController{
         //Get the QR code string from the image
         String QRCodeString = qrReader.readQRCodeString(QRCodeFile);
 
-        //place the facility information in the wallet
-        tokenWallet.setCurrentFacility(QRCodeString);
+        //Extract the facility from the QR string
+        return FacilityRegisterInformation.fromBase64String(QRCodeString);
     }
 
     @Override
@@ -259,11 +267,11 @@ public class UserControllerImpl extends Application implements UserController{
         while (true) {
             try {
                 //Get a capsule from the tokenwallet
-                Capsule capsule = tokenWallet.getCapsule();
+                CapsuleLog capsuleLog = tokenWallet.getCapsule();
                 //send the generated capsule to the mixing proxy
-                CapsuleVerification verification = connectionController.registerCapsule(capsule);
+                CapsuleVerification verification = connectionController.registerCapsule(capsuleLog);
                 //Set the accepted capsule as active capsule in the tokenwallet
-                tokenWallet.setCurrentCapsule(capsule);
+                tokenWallet.setCurrentCapsule(capsuleLog);
 
                 return verification;
             } catch (CapsuleNotValidException e) {

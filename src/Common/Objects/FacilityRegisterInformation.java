@@ -2,17 +2,15 @@ package Common.Objects;
 
 import java.util.Base64;
 
-public class Facility {
+public class FacilityRegisterInformation {
     private byte[] randomKey;
     private String facilityIdentifier;
     private byte[] facilityKey;
 
-    public Facility(String qrCodeString) {
-        String[] QRStringArray = qrCodeString.split(",");
-
-        randomKey = Base64.getDecoder().decode(QRStringArray[0]);
-        facilityIdentifier = new String(Base64.getDecoder().decode(QRStringArray[1]));
-        facilityKey = Base64.getDecoder().decode(QRStringArray[2]);
+    public FacilityRegisterInformation(byte[] randomKey, String facilityIdentifier, byte[] facilityKey) {
+        this.randomKey = randomKey;
+        this.facilityIdentifier = facilityIdentifier;
+        this.facilityKey = facilityKey;
     }
 
     public byte[] getRandomKey() {
@@ -33,6 +31,15 @@ public class Facility {
         String facilityKeyString = Base64.getEncoder().encodeToString(facilityKey);
 
         return randomKeyString + "," + facilityIdentifierString + "," + facilityKeyString;
+    }
 
+    public static FacilityRegisterInformation fromBase64String(String qrCodeString) {
+        String[] QRStringArray = qrCodeString.split(",");
+
+        byte[] randomKey = Base64.getDecoder().decode(QRStringArray[0]);
+        String facilityIdentifier = new String(Base64.getDecoder().decode(QRStringArray[1]));
+        byte[] facilityKey = Base64.getDecoder().decode(QRStringArray[2]);
+
+        return new FacilityRegisterInformation(randomKey, facilityIdentifier, facilityKey);
     }
 }

@@ -1,4 +1,12 @@
 package Connection.MatchingService.MixingProxy;
 
-public class MatchingServiceMixingProxyImpl {
+import Connection.ConnectionController;
+import Controller.MatchingServiceController;
+
+public class MatchingServiceMixingProxyImpl implements MatchingServiceMixingProxy {
+    private ConnectionController connectionController;
+
+    public MatchingServiceMixingProxyImpl(ConnectionController connectionController) {
+        this.connectionController = connectionController;
+    }
 }

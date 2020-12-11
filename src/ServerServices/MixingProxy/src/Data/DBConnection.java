@@ -1,7 +1,6 @@
 package Data;
 
-import Common.Objects.Capsule;
-import Common.Objects.Token;
+import Common.Objects.CapsuleLog;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -66,10 +65,10 @@ public class DBConnection {
         return stmt.executeQuery();
     }
 
-    public boolean containsCapsule(Capsule capsule) throws SQLException {
+    public boolean containsCapsule(CapsuleLog capsuleLog) throws SQLException {
         //Create query
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM capsules WHERE token = ?");
-        stmt.setBytes(1, capsule.getToken().getTokenBytes());
+        stmt.setBytes(1, capsuleLog.getToken().getTokenBytes());
 
         //Run query
         ResultSet rs =  stmt.executeQuery();
@@ -77,12 +76,12 @@ public class DBConnection {
         return rs.next();
     }
 
-    public void addCapsule(Capsule capsule) throws SQLException {
+    public void addCapsule(CapsuleLog capsuleLog) throws SQLException {
         //Extract the capsule info for the db tables
-        byte[] token = capsule.getToken().getTokenBytes();
-        byte[] facilityKey = capsule.getFacilityKey();
-        java.sql.Timestamp startTime = java.sql.Timestamp.valueOf(capsule.getStartTime());
-        java.sql.Timestamp stopTime = java.sql.Timestamp.valueOf(capsule.getStopTime());
+        byte[] token = capsuleLog.getToken().getTokenBytes();
+        byte[] facilityKey = capsuleLog.getFacilityKey();
+        java.sql.Timestamp startTime = java.sql.Timestamp.valueOf(capsuleLog.getStartTime());
+        java.sql.Timestamp stopTime = java.sql.Timestamp.valueOf(capsuleLog.getStopTime());
         java.sql.Timestamp receivedTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
 
 

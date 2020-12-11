@@ -17,4 +17,6 @@ public interface RegistrarController {
     //User enrollment
     void registerUser(String userIdentifier) throws SQLException, AlreadyRegisteredException;
     TokenUpdate getTokens(String userIdentifier, LocalDate date) throws Exception;
+
+    byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException;
 }

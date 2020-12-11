@@ -387,7 +387,7 @@ public class RegistrarControllerImpl implements RegistrarController {
             for (byte[] token : tokens) {
                 byte[] signature = signatures.get(token);
 
-                tokenArrayList.add(new Token(token, signature, date, false));
+                tokenArrayList.add(new Token(token, signature, date));
             }
 
             //Return a token update message to the user
@@ -398,6 +398,18 @@ public class RegistrarControllerImpl implements RegistrarController {
         } catch (Exception e) {
             handleException(e);
             throw new Exception("Couldn't create new tokens: Something went wrong");
+        }
+    }
+
+    @Override
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+        try {
+            return dbConnection.getFacilityPseudonym(facilityIdentifier, date);
+        } catch (NoSuchElementException e) {
+            throw e;
+        } catch (Exception e) {
+            handleException(e);
+            throw e;
         }
     }
 

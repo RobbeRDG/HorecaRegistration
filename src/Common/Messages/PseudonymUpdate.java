@@ -7,11 +7,9 @@ import java.util.HashMap;
 
 public class PseudonymUpdate implements Serializable {
     private HashMap<LocalDate, byte[]> pseudonyms;
-
     public PseudonymUpdate(HashMap<LocalDate, byte[]> pseudonyms) {
         this.pseudonyms = pseudonyms;
     }
-
     public HashMap<LocalDate, byte[]> getPseudonymHashmap() {
         return pseudonyms;
     }

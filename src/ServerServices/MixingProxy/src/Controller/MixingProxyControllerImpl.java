@@ -2,7 +2,7 @@ package Controller;
 
 import Common.Exceptions.CapsuleNotValidException;
 import Common.Messages.CapsuleVerification;
-import Common.Objects.Capsule;
+import Common.Objects.CapsuleLog;
 import Common.Objects.Token;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
@@ -19,7 +19,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class MixingProxyControllerImpl implements MixingProxyController{
     private static DBConnection dbConnection;
@@ -28,7 +27,7 @@ public class MixingProxyControllerImpl implements MixingProxyController{
     private static PublicKey mixingProxyPublicKey;
 
     ///////////////////////////////////////////////////////////////////
-    ///         MIXING PROXY LOGIC
+    ///         MIXING PROXY INTERNAL LOGIC
     ///////////////////////////////////////////////////////////////////
 
     public MixingProxyControllerImpl() throws InvalidKeySpecException, ClassNotFoundException, NoSuchAlgorithmException, IOException {
@@ -122,19 +121,19 @@ public class MixingProxyControllerImpl implements MixingProxyController{
     ///////////////////////////////////////////////////////////////////
 
     @Override
-    public CapsuleVerification registerToken(Capsule capsule) throws Exception {
+    public CapsuleVerification registerToken(CapsuleLog capsuleLog) throws Exception {
         try {
             //Check if the token is valid
-            if (!validateCapsule(capsule)) throw new CapsuleNotValidException("The send capsule is not a valid capsule");
+            if (!validateCapsule(capsuleLog)) throw new CapsuleNotValidException("The send capsule is not a valid capsule");
 
             //Check if the capsule is not already registered
-            if (dbConnection.containsCapsule(capsule)) throw new CapsuleNotValidException("Capsule is already registered");
+            if (dbConnection.containsCapsule(capsuleLog)) throw new CapsuleNotValidException("Capsule is already registered");
 
             //Place the capsule in the db
-            dbConnection.addCapsule(capsule);
+            dbConnection.addCapsule(capsuleLog);
 
             //Return the signed facility key
-            return generateCapsuleVerification(capsule);
+            return generateCapsuleVerification(capsuleLog);
         } catch (CapsuleNotValidException e) {
             throw e;
         } catch (Exception e) {
@@ -144,12 +143,12 @@ public class MixingProxyControllerImpl implements MixingProxyController{
 
     }
 
-    private CapsuleVerification generateCapsuleVerification(Capsule capsule) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    private CapsuleVerification generateCapsuleVerification(CapsuleLog capsuleLog) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initSign(mixingProxyPrivateKey);
 
         //Get the facility key
-        byte[] facilityKey = capsule.getFacilityKey();
+        byte[] facilityKey = capsuleLog.getFacilityKey();
 
         //Sign the facility key
         sign.update(facilityKey);
@@ -167,12 +166,12 @@ public class MixingProxyControllerImpl implements MixingProxyController{
         }
     }
 
-    private boolean validateCapsule(Capsule capsule) throws SQLException {
+    private boolean validateCapsule(CapsuleLog capsuleLog) throws SQLException {
         //Extract the capsule contents
-        Token token = capsule.getToken();
-        LocalDateTime startTime = capsule.getStartTime();
-        LocalDateTime stopTime = capsule.getStopTime();
-        byte[] facilityKey = capsule.getFacilityKey();
+        Token token = capsuleLog.getToken();
+        LocalDateTime startTime = capsuleLog.getStartTime();
+        LocalDateTime stopTime = capsuleLog.getStopTime();
+        byte[] facilityKey = capsuleLog.getFacilityKey();
 
         //Get the tokenbytes and date from the valid tokens table
         ResultSet rs = dbConnection.getValidToken(token.getTokenBytes(), token.getDate());

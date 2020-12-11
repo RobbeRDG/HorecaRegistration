@@ -25,4 +25,6 @@ public interface ConnectionController {
     void startClientConnections() throws RemoteException, NotBoundException;
 
     void addTokensToMixingProxy(LocalDate date, ArrayList<byte[]> tokens) throws Exception;
+
+    byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException;
 }

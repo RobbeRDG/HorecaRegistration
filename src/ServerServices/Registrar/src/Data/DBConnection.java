@@ -9,11 +9,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class DBConnection {
     private static String url;
@@ -107,6 +105,20 @@ public class DBConnection {
         else return pseudonyms;
     }
 
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND date = ?");
+        stmt.setString(1, facilityIdentifier);
+        stmt.setDate(2, Date.valueOf(date));
+
+        //Run query
+        ResultSet response = stmt.executeQuery();
+
+        //Get the pseudonym bytes
+        if (!response.next()) throw new NoSuchElementException("Couldn't fetch facility pseudonym: pseudonym for specific parameters not created");
+        return response.getBytes("pseudonym");
+    }
+
 
     ///////////////////////////////////////////////////////////////////
     ///         USER ENROLLMENT
@@ -165,7 +177,8 @@ public class DBConnection {
             tokens.add(token);
         }
 
-        if (tokens.size() == 0) throw new IllegalArgumentException("Pseudonyms not yet created");
+        if (tokens.size() == 0) throw new IllegalArgumentException("Tokens not yet created");
         else return tokens;
     }
+
 }

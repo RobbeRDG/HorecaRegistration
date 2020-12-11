@@ -19,13 +19,13 @@ public class QRGenerator {
         this.path = path;
     }
 
-    public void generateQRCode(byte[] randomToday, byte[] facilityIdentifierBytes, byte[] pseudonymToday) throws WriterException, IOException {
+    public void generateQRCode(byte[] randomToday, byte[] facilityIdentifierBytes, byte[] facilityKey) throws WriterException, IOException {
         //Get the Base64 encoding of each binary array
         String randomTodayStr = Base64.getEncoder().encodeToString(randomToday);
         String facilityIdentifierBytesSTR = Base64.getEncoder().encodeToString(facilityIdentifierBytes);
-        String pseudonymTodayStr = Base64.getEncoder().encodeToString(pseudonymToday);
+        String facilityKeyStr = Base64.getEncoder().encodeToString(facilityKey);
 
-        String QRMessage = randomTodayStr + "," + facilityIdentifierBytesSTR + "," + pseudonymTodayStr;
+        String QRMessage = randomTodayStr + "," + facilityIdentifierBytesSTR + "," + facilityKeyStr;
 
         //Generate the QR matrix
         QRCodeWriter QRWriter = new QRCodeWriter();

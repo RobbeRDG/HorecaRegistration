@@ -1,7 +1,7 @@
 package Connection.MixingProxy.User;
 
 import Common.Messages.CapsuleVerification;
-import Common.Objects.Capsule;
+import Common.Objects.CapsuleLog;
 import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
 import Connection.ConnectionController;
 
@@ -13,7 +13,7 @@ public class MixingProxyUserServiceImpl implements MixingProxyUserService {
     }
 
     @Override
-    public CapsuleVerification registerCapsule(Capsule capsule) throws Exception {
-        return connectionController.registerToken(capsule);
+    public CapsuleVerification registerCapsule(CapsuleLog capsuleLog) throws Exception {
+        return connectionController.registerToken(capsuleLog);
     }
 }

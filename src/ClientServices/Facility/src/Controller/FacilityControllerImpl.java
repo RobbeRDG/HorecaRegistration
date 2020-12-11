@@ -5,6 +5,9 @@ import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Controller.HelperObjects.QRGenerator;
 
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -125,16 +128,32 @@ public class FacilityControllerImpl {
             //Get the random number for today
             byte[] randomToday = getTodayRandom(day);
 
+            //Calculate the pseudonym hash from the random key
+            byte[] facilityKey = hashPseudonymToday(pseudonymToday, randomToday);
+
             //Get the identifier byte array
             byte[] facilityIdentifierBytes = facilityIdentifier.getBytes();
 
             //Generate and save the QR code
             qrCodeGenerator.setPath("Resources/QR/" + facilityIdentifier + ".png");
-            qrCodeGenerator.generateQRCode(randomToday, facilityIdentifierBytes, pseudonymToday);
+            qrCodeGenerator.generateQRCode(randomToday, facilityIdentifierBytes, facilityKey);
 
         } catch (Exception e) {
             handleException(e);
         }
+    }
+
+    private byte[] hashPseudonymToday(byte[] pseudonymToday, byte[] randomToday) throws NoSuchAlgorithmException {
+        byte[] temp = new byte[pseudonymToday.length + randomToday.length];
+
+        ByteBuffer buff = ByteBuffer.wrap(temp);
+        buff.put(pseudonymToday);
+        buff.put(randomToday);
+
+        byte[] combinedPreHash = buff.array();
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        return digest.digest(combinedPreHash);
     }
 
     private byte[] getTodayRandom(LocalDate cal) {

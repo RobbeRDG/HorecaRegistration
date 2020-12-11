@@ -2,7 +2,7 @@ package Connection;
 
 import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
-import Common.Objects.Capsule;
+import Common.Objects.CapsuleLog;
 import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
 import Common.RMIInterfaces.Registrar.RegistrarUserService;
 
@@ -46,8 +46,8 @@ public class ConnectionControllerImpl implements ConnectionController{
     }
 
     @Override
-    public CapsuleVerification registerCapsule(Capsule capsule) throws Exception {
-        return mixingProxyUserService.registerCapsule(capsule);
+    public CapsuleVerification registerCapsule(CapsuleLog capsuleLog) throws Exception {
+        return mixingProxyUserService.registerCapsule(capsuleLog);
     }
 
 }
