@@ -21,6 +21,10 @@ public class FacilityVisitLog implements Serializable {
         return entryTime;
     }
 
+    public LocalDateTime getLeaveTime() {
+        return leaveTime;
+    }
+
     public FacilityRegisterInformation getVisitedFacility() {
         return visitedFacilityRegisterInformation;
     }

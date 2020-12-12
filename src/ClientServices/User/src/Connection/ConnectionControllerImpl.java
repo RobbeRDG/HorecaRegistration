@@ -3,6 +3,8 @@ package Connection;
 import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
 import Common.Objects.CapsuleLog;
+import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
+import Common.RMIInterfaces.MatchingService.MatchingServiceUser;
 import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
 import Common.RMIInterfaces.Registrar.RegistrarUserService;
 
@@ -15,8 +17,10 @@ import java.time.LocalDate;
 public class ConnectionControllerImpl implements ConnectionController{
     private static final int registrarUserRMIClientPort = 3333;
     private static final int mixingProxyUserRMIClientPort = 4444;
+    private static final int MatchingServiceUserRMIClientPort = 8888;
     private static RegistrarUserService registrarUserService;
     private static MixingProxyUserService mixingProxyUserService;
+    private static MatchingServiceUser matchingServiceUser;
 
     public ConnectionControllerImpl() {
     }
@@ -32,6 +36,11 @@ public class ConnectionControllerImpl implements ConnectionController{
         Registry mixingProxyUserRegister = LocateRegistry.getRegistry("localhost", mixingProxyUserRMIClientPort);
         mixingProxyUserService = (MixingProxyUserService) mixingProxyUserRegister
                 .lookup("MixingProxyUserService");
+
+        //Connect to the matching service
+        Registry matchingServiceUserRegistry = LocateRegistry.getRegistry("localhost", MatchingServiceUserRMIClientPort);
+        matchingServiceUser = (MatchingServiceUser) matchingServiceUserRegistry
+                .lookup("MatchingServiceUser");
     }
 
     @Override

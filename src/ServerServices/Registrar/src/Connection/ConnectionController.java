@@ -27,4 +27,6 @@ public interface ConnectionController {
     void addTokensToMixingProxy(LocalDate date, ArrayList<byte[]> tokens) throws Exception;
 
     byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException;
+
+    void addUnacknowledgedTokens(ArrayList<byte[]> unacknowledgedTokens) throws Exception;
 }

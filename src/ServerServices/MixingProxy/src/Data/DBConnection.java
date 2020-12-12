@@ -68,7 +68,7 @@ public class DBConnection {
     public boolean containsCapsule(CapsuleLog capsuleLog) throws SQLException {
         //Create query
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM capsules WHERE token = ?");
-        stmt.setBytes(1, capsuleLog.getToken().getTokenBytes());
+        stmt.setBytes(1, capsuleLog.getToken());
 
         //Run query
         ResultSet rs =  stmt.executeQuery();
@@ -78,7 +78,7 @@ public class DBConnection {
 
     public void addCapsule(CapsuleLog capsuleLog) throws SQLException {
         //Extract the capsule info for the db tables
-        byte[] token = capsuleLog.getToken().getTokenBytes();
+        byte[] token = capsuleLog.getToken();
         byte[] facilityKey = capsuleLog.getFacilityKey();
         java.sql.Timestamp startTime = java.sql.Timestamp.valueOf(capsuleLog.getStartTime());
         java.sql.Timestamp stopTime = java.sql.Timestamp.valueOf(capsuleLog.getStopTime());

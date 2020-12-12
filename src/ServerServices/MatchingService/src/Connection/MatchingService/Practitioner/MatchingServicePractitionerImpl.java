@@ -1,10 +1,10 @@
 package Connection.MatchingService.Practitioner;
 
 import Common.Messages.InfectedUserMessage;
-import Common.Objects.InfectedUser;
+import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
 import Connection.ConnectionController;
 
-public class MatchingServicePractitionerImpl implements MatchingServicePractitioner{
+public class MatchingServicePractitionerImpl implements MatchingServicePractitioner {
     private ConnectionController connectionController;
 
     public MatchingServicePractitionerImpl(ConnectionController connectionController) {
@@ -12,7 +12,7 @@ public class MatchingServicePractitionerImpl implements MatchingServicePractitio
     }
 
     @Override
-    public void addInfectedUser(InfectedUserMessage infectedUserMessage) {
+    public void addInfectedUser(InfectedUserMessage infectedUserMessage) throws Exception {
         connectionController.addInfectedUser(infectedUserMessage);
     }
 

@@ -4,19 +4,19 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class InfectedUser implements Serializable {
-    private ArrayList<CapsuleLog> infectedCapsules;
-    private ArrayList<FacilityVisitLog> infectedFacilities;
+    private ArrayList<byte[]> infectedTokens;
+    private ArrayList<FacilityVisitLog> infectedFacilityIntervals;
 
-    public InfectedUser(ArrayList<CapsuleLog> infectedCapsules, ArrayList<FacilityVisitLog> infectedFacilities) {
-        this.infectedCapsules = infectedCapsules;
-        this.infectedFacilities = infectedFacilities;
+    public InfectedUser(ArrayList<byte[]> infectedTokens, ArrayList<FacilityVisitLog> infectedFacilityIntervals) {
+        this.infectedTokens = infectedTokens;
+        this.infectedFacilityIntervals = infectedFacilityIntervals;
     }
 
-    public ArrayList<CapsuleLog> getInfectedCapsules() {
-        return infectedCapsules;
+    public ArrayList<byte[]> getInfectedTokens() {
+        return infectedTokens;
     }
 
-    public ArrayList<FacilityVisitLog> getInfectedFacilities() {
-        return infectedFacilities;
+    public ArrayList<FacilityVisitLog> getInfectedFacilityIntervals() {
+        return infectedFacilityIntervals;
     }
 }

@@ -2,12 +2,14 @@ package Connection;
 
 import Common.Messages.CapsuleVerification;
 import Common.Objects.CapsuleLog;
+import Common.RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
 import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
 import Connection.MixingProxy.Registrar.MixingProxyRegistrarServiceImpl;
 import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
 import Connection.MixingProxy.User.MixingProxyUserServiceImpl;
 import Controller.MixingProxyController;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -19,8 +21,10 @@ public class ConnectionControllerImpl implements ConnectionController {
     private static MixingProxyController mixingProxyController;
     private static MixingProxyUserService mixingProxyUserServer;
     private static MixingProxyRegistrarService mixingProxyRegistrarServer;
+    private static MatchingServiceMixingProxy matchingServiceMixingProxy;
     private static final int mixingProxyUserRMIServerPort = 4444;
     private static final int mixingProxyRegistrarRMIServerPort = 5555;
+    private static final int matchingServiceMixingProxyRMIClientPort = 6666;
 
     public ConnectionControllerImpl(MixingProxyController mixingProxyController) {
         this.mixingProxyController = mixingProxyController;
@@ -58,7 +62,13 @@ public class ConnectionControllerImpl implements ConnectionController {
         mixingProxyController.addTokens(date, tokens);
     }
 
-    public void startClientConnections() {
+    @Override
+    public void startClientConnections() throws RemoteException, NotBoundException {
+        //Connect to the matching service
+        Registry matchingServiceMixingProxyRegistry = LocateRegistry.getRegistry("localhost", matchingServiceMixingProxyRMIClientPort);
+        matchingServiceMixingProxy = (MatchingServiceMixingProxy) matchingServiceMixingProxyRegistry
+                .lookup("MatchingServiceMixingProxy");
 
+        System.out.println("Started all RMI client instances");
     }
 }

@@ -401,6 +401,10 @@ public class RegistrarControllerImpl implements RegistrarController {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////
+    ///         MATCHING SERVICE LOGIC
+    ///////////////////////////////////////////////////////////////////
+
     @Override
     public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
         try {
@@ -410,6 +414,15 @@ public class RegistrarControllerImpl implements RegistrarController {
         } catch (Exception e) {
             handleException(e);
             throw e;
+        }
+    }
+
+    @Override
+    public void addUnacknowledgedTokens(ArrayList<byte[]> unacknowledgedTokens) throws Exception {
+        try {
+            dbConnection.addUnacknowledgedTokens(unacknowledgedTokens);
+        } catch (Exception e) {
+            throw new Exception("Couldn't add unacknowledged tokens: Something went wrong");
         }
     }
 

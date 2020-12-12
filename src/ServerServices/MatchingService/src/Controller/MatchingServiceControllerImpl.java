@@ -1,9 +1,12 @@
 package Controller;
 
+import Common.Exceptions.NotValidException;
 import Common.Messages.InfectedUserMessage;
+import Common.Objects.CapsuleLog;
 import Common.Objects.FacilityVisitLog;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
+import Controller.HelperObjects.SendUnacknowledgedTokensCaller;
 import Data.DBConnection;
 
 import java.io.*;
@@ -13,9 +16,14 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Timer;
 
 public class MatchingServiceControllerImpl implements MatchingServiceController{
     private static DBConnection dbConnection;
@@ -23,6 +31,7 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
     private static PrivateKey mixingProxyPrivateKey;
     private static PublicKey mixingProxyPublicKey;
     private static PublicKey practitionerPublicKey;
+    private static final int uninformedRevealPeriodInDays = 1;
 
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
@@ -139,8 +148,16 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
             if (!isValidMessageSignature(infectedUserMessage)) throw new SignatureException(
                     "Couldn't insert infected user: message signature doesn't match");
 
-            //Test if the facility visits in the message itsself are valid
-            if (!containsValidFacilityVisits(infectedUserMessage))
+            //Test if the facility visits in the message itself are valid
+            if (!containsValidFacilityVisits(infectedUserMessage)) throw new NotValidException(
+                    "Couldn't insert infected user: logs contain invalid facility");
+
+            //Set the critical capsules with the visited facility logs
+            dbConnection.markCriticalCapsules(infectedUserMessage.getInfectedUser().getInfectedFacilityIntervals());
+
+
+            //Set the infected user tokens to informed
+            dbConnection.markInformed(infectedUserMessage.getInfectedUser().getInfectedTokens());
         } catch (SignatureException e) {
             throw e;
         } catch (Exception e) {
@@ -149,8 +166,54 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
         }
     }
 
+    public void sendUnacknowledgedTokens() {
+        try {
+            ArrayList<byte[]> unacknowledgedTokens = dbConnection.getUnacknowledgedTokens(LocalDate.now().minusDays(uninformedRevealPeriodInDays));
+            connectionController.addUnacknowledgedTokens(unacknowledgedTokens);
+
+            //Set the send tokens as acknowledged
+            dbConnection.markInformed(unacknowledgedTokens);
+
+            //Set a timer task to send the unacknowledged tokens to the registrar
+            java.util.Date taskDate = Date.from(LocalDateTime.now().plusDays(uninformedRevealPeriodInDays).atZone(ZoneId.systemDefault()).toInstant());
+            Timer sendUninformedTimer = new Timer();
+            sendUninformedTimer.schedule(new SendUnacknowledgedTokensCaller(this), taskDate );
+        } catch (Exception e) {
+            handleException(e);
+        }
+    }
+
+    @Override
+    public void addCapsules(ArrayList<CapsuleLog> capsules) throws Exception {
+        try {
+            dbConnection.addCapsules(capsules);
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't upload the capsule logs: Something went wrong");
+        }
+    }
+
+    @Override
+    public void submitAcknowledgements(ArrayList<byte[]> acknowledgementTokens) throws Exception {
+        try {
+            dbConnection.markInformed(acknowledgementTokens);
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't acknowledge tokens: Something went wrong");
+        }
+    }
+
+    @Override
+    public ArrayList<CapsuleLog> getInfectedCapsules() throws Exception {
+        try {
+            return dbConnection.getInfectedCapsules();
+        } catch (Exception e) {
+            throw new Exception("Couldn't fetch infected capsules: something went wrong");
+        }
+    }
+
     private boolean containsValidFacilityVisits(InfectedUserMessage infectedUserMessage) throws SQLException, NoSuchAlgorithmException {
-        ArrayList<FacilityVisitLog> facilityVisitLogs = infectedUserMessage.getInfectedUser().getInfectedFacilities();
+        ArrayList<FacilityVisitLog> facilityVisitLogs = infectedUserMessage.getInfectedUser().getInfectedFacilityIntervals();
 
         for (FacilityVisitLog facilityVisitLog : facilityVisitLogs) {
             //Extract the information from the log
@@ -166,10 +229,10 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
             byte[] hashedPseudonym = hashPseudonym(facilityPseudonym, randomKey);
 
             //The log is correct if the hash from the randomKey and pseudonym equals the facilityKey
-
-
-
+            if (!Arrays.equals(hashedPseudonym, facilityKey)) return false;
         }
+
+        return true;
     }
 
     private byte[] hashPseudonym(byte[] facilityPseudonym, byte[] randomKey) throws NoSuchAlgorithmException {
@@ -193,4 +256,5 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
         sign.update(infectedUserMessage.getInfectedUserBytes());
         return sign.verify(signature);
     }
+
 }

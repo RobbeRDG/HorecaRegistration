@@ -105,19 +105,7 @@ public class DBConnection {
         else return pseudonyms;
     }
 
-    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
-        //Create query
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND date = ?");
-        stmt.setString(1, facilityIdentifier);
-        stmt.setDate(2, Date.valueOf(date));
 
-        //Run query
-        ResultSet response = stmt.executeQuery();
-
-        //Get the pseudonym bytes
-        if (!response.next()) throw new NoSuchElementException("Couldn't fetch facility pseudonym: pseudonym for specific parameters not created");
-        return response.getBytes("pseudonym");
-    }
 
 
     ///////////////////////////////////////////////////////////////////
@@ -181,4 +169,33 @@ public class DBConnection {
         else return tokens;
     }
 
+    ///////////////////////////////////////////////////////////////////
+    ///         MATCHING SERVICE LOGIC
+    ///////////////////////////////////////////////////////////////////
+
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM pseudonyms WHERE facility_identifier = ? AND date = ?");
+        stmt.setString(1, facilityIdentifier);
+        stmt.setDate(2, Date.valueOf(date));
+
+        //Run query
+        ResultSet response = stmt.executeQuery();
+
+        //Get the pseudonym bytes
+        if (!response.next()) throw new NoSuchElementException("Couldn't fetch facility pseudonym: pseudonym for specific parameters not created");
+        return response.getBytes("pseudonym");
+    }
+
+    public void addUnacknowledgedTokens(ArrayList<byte[]> unacknowledgedTokens) throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO unacknowledged_tokens(token) VALUES (?)");
+
+        for (byte[] token: unacknowledgedTokens) {
+            stmt.setBytes(1, token);
+            stmt.addBatch();
+        }
+
+        stmt.executeUpdate();
+    }
 }

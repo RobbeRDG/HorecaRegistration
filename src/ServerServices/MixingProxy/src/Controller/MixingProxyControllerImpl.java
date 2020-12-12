@@ -1,6 +1,6 @@
 package Controller;
 
-import Common.Exceptions.CapsuleNotValidException;
+import Common.Exceptions.NotValidException;
 import Common.Messages.CapsuleVerification;
 import Common.Objects.CapsuleLog;
 import Common.Objects.Token;
@@ -93,6 +93,9 @@ public class MixingProxyControllerImpl implements MixingProxyController{
             //Start the connection server
             connectionController.startServerConnections();
 
+            //Start the clientConnections
+            connectionController.startClientConnections();
+
             System.out.println("Mixing proxy ready");
         } catch (Exception e){
             handleException(e);
@@ -124,17 +127,17 @@ public class MixingProxyControllerImpl implements MixingProxyController{
     public CapsuleVerification registerToken(CapsuleLog capsuleLog) throws Exception {
         try {
             //Check if the token is valid
-            if (!validateCapsule(capsuleLog)) throw new CapsuleNotValidException("The send capsule is not a valid capsule");
+            if (!validateCapsule(capsuleLog)) throw new NotValidException("The send capsule is not a valid capsule");
 
             //Check if the capsule is not already registered
-            if (dbConnection.containsCapsule(capsuleLog)) throw new CapsuleNotValidException("Capsule is already registered");
+            if (dbConnection.containsCapsule(capsuleLog)) throw new NotValidException("Capsule is already registered");
 
             //Place the capsule in the db
             dbConnection.addCapsule(capsuleLog);
 
             //Return the signed facility key
             return generateCapsuleVerification(capsuleLog);
-        } catch (CapsuleNotValidException e) {
+        } catch (NotValidException e) {
             throw e;
         } catch (Exception e) {
             handleException(e);
@@ -168,13 +171,13 @@ public class MixingProxyControllerImpl implements MixingProxyController{
 
     private boolean validateCapsule(CapsuleLog capsuleLog) throws SQLException {
         //Extract the capsule contents
-        Token token = capsuleLog.getToken();
+        byte[] token = capsuleLog.getToken();
         LocalDateTime startTime = capsuleLog.getStartTime();
         LocalDateTime stopTime = capsuleLog.getStopTime();
         byte[] facilityKey = capsuleLog.getFacilityKey();
 
         //Get the tokenbytes and date from the valid tokens table
-        ResultSet rs = dbConnection.getValidToken(token.getTokenBytes(), token.getDate());
+        ResultSet rs = dbConnection.getValidToken(token, startTime.toLocalDate());
 
         if (rs.next()) {
             //Test if the startTime is on the day of the valid token

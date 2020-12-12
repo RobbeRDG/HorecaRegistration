@@ -5,6 +5,7 @@ import Common.Messages.PseudonymUpdate;
 import Common.Messages.TokenUpdate;
 import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
 import Common.RMIInterfaces.Registrar.RegistrarFacilityService;
+import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
 import Connection.Registrar.Facility.RegistrarFacilityServiceImpl;
 import Common.RMIInterfaces.Registrar.RegistrarUserService;
 import Connection.Registrar.User.RegistrarUserServiceImpl;
@@ -23,9 +24,11 @@ public class ConnectionControllerImpl implements ConnectionController{
     private static RegistrarController registrarController;
     private static RegistrarFacilityService registrarFacilityServer;
     private static RegistrarUserService registrarUserServer;
+    private static RegistrarUserService registrarMatchingServiceServer;
     private static MixingProxyRegistrarService mixingProxyRegistrarService;
     private static final int registrarFacilityRMIServerPort = 2222;
     private static final int registrarUserRMIServerPort = 3333;
+    private static final int registrarMatchingServiceRMIServerPort = 9999;
     private static final int mixingProxyRegistrarRMIClientPort = 5555;
 
     public ConnectionControllerImpl(RegistrarController registrarController) {
@@ -49,6 +52,13 @@ public class ConnectionControllerImpl implements ConnectionController{
         Registry userRegistry = LocateRegistry.createRegistry(registrarUserRMIServerPort);
         userRegistry.rebind("RegistrarUserService", userStub);
 
+        //Start the Matching Service server
+        RegistrarMatchingService matchingServiceStub = (RegistrarMatchingService) UnicastRemoteObject
+                .exportObject((RegistrarMatchingService) registrarMatchingServiceServer, 0);
+
+        Registry matchingServiceRegistry = LocateRegistry.createRegistry(registrarMatchingServiceRMIServerPort);
+        matchingServiceRegistry.rebind("RegistrarMatchingService", matchingServiceStub);
+
         System.out.println("Started all RMI server instances");
     }
 
@@ -57,6 +67,8 @@ public class ConnectionControllerImpl implements ConnectionController{
         Registry mixingProxyRegistrarRegister = LocateRegistry.getRegistry("localhost", mixingProxyRegistrarRMIClientPort);
         mixingProxyRegistrarService = (MixingProxyRegistrarService) mixingProxyRegistrarRegister
                 .lookup("MixingProxyRegistrarService");
+
+        System.out.println("Started all RMI client instances");
     }
 
     @Override
@@ -67,6 +79,11 @@ public class ConnectionControllerImpl implements ConnectionController{
     @Override
     public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
         return registrarController.getFacilityPseudonym(facilityIdentifier, date);
+    }
+
+    @Override
+    public void addUnacknowledgedTokens(ArrayList<byte[]> unacknowledgedTokens) throws Exception {
+        registrarController.addUnacknowledgedTokens(unacknowledgedTokens);
     }
 
     @Override

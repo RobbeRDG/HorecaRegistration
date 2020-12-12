@@ -1,6 +1,6 @@
 package Controller;
 
-import Common.Exceptions.CapsuleNotValidException;
+import Common.Exceptions.NotValidException;
 import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
 import Common.Objects.CapsuleLog;
@@ -83,7 +83,6 @@ public class UserControllerImpl extends Application implements UserController{
 
     private void loadControllers() throws IOException {
         //Load the login controller
-        System.out.println(System.getProperty("user.dir"));
         FXMLLoader loginLoader = new FXMLLoader(getClass().getResource("../GUI/Login/login.fxml"));
         loginPane = loginLoader.load();
 
@@ -274,7 +273,7 @@ public class UserControllerImpl extends Application implements UserController{
                 tokenWallet.setCurrentCapsule(capsuleLog);
 
                 return verification;
-            } catch (CapsuleNotValidException e) {
+            } catch (NotValidException e) {
                 //Start over
             }
         }
