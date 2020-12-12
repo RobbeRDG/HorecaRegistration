@@ -3,6 +3,7 @@ package Controller;
 import com.google.zxing.NotFoundException;
 
 import java.io.IOException;
+import java.security.PublicKey;
 
 public interface UserController {
 
@@ -17,4 +18,5 @@ public interface UserController {
 
     void leaveFacility() throws Exception;
     void refreshToken();
+    PublicKey getRegistrarPublicKey();
 }

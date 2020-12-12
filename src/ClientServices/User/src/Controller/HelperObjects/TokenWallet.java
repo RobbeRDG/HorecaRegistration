@@ -4,6 +4,7 @@ import Common.Messages.TokenUpdate;
 import Common.Objects.CapsuleLog;
 import Common.Objects.FacilityRegisterInformation;
 import Common.Objects.Token;
+import Controller.UserController;
 
 import java.io.IOException;
 import java.security.*;
@@ -12,16 +13,17 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 public class TokenWallet {
+    private UserController userController;
     private static final int tokenDurationInSeconds = 60;
     private FacilityRegisterInformation currentFacilityRegisterInformation;
-    private ArrayList<Token> tokens;
-    private Stack<Token> unusedTokens;
-    private PublicKey registrarPublicKey;
+    private ArrayList<byte[]> tokens;
+    private Stack<byte[]> unusedTokens;
     private CapsuleLog currentCapsuleLog;
 
 
 
-    public TokenWallet() {
+    public TokenWallet(UserController userController) {
+        this.userController = userController;
         tokens = new ArrayList<>();
         unusedTokens = new Stack<>();
     }
@@ -34,21 +36,25 @@ public class TokenWallet {
         Collections.shuffle(unusedTokens);
     }
 
-    public boolean signaturesMatch() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    public boolean signaturesMatch(TokenUpdate tokenUpdate) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        ArrayList<byte[]> verifyTokens = tokenUpdate.getTokens();
+        ArrayList<byte[]> signatures = tokenUpdate.getTokenSignatures();
+
+        //If the arrays are a different size the tokens can't be verified
+        if (verifyTokens.size() != signatures.size()) return false;
+
         Signature sign = Signature.getInstance("SHA256withRSA");
-        for( Token token : tokens) {
-            byte[] signature = token.getSignature();
-            sign.initVerify(registrarPublicKey);
-            sign.update(token.getTokenBytes());
+        for (int i=0; i<verifyTokens.size(); i++) {
+            byte[] token = verifyTokens.get(i);
+            byte[] signature = signatures.get(i);
+
+            sign.initVerify(userController.getRegistrarPublicKey());
+            sign.update(token);
 
             if (!sign.verify(signature)) return false;
         }
 
         return true;
-    }
-
-    public void setRegistrarPublicKey(PublicKey registrarPublicKey) {
-        this.registrarPublicKey = registrarPublicKey;
     }
 
     public void setCurrentFacility(FacilityRegisterInformation currentFacilityRegisterInformation) {
@@ -60,7 +66,7 @@ public class TokenWallet {
         if (currentFacilityRegisterInformation == null) throw new IllegalArgumentException("Can't activate tokens : no current facility");
         if (unusedTokens.empty()) throw new IllegalArgumentException("Can't activate tokens : no remaining tokens");
 
-        Token selectedToken = unusedTokens.pop();
+        byte[] selectedToken = unusedTokens.pop();
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime stopTime = startTime.plus(Duration.ofSeconds(tokenDurationInSeconds));
         byte[] facilityKey = currentFacilityRegisterInformation.getFacilityKey();

@@ -1,8 +1,9 @@
 package Common.Objects;
 
+import java.io.Serializable;
 import java.util.Base64;
 
-public class FacilityRegisterInformation {
+public class FacilityRegisterInformation implements Serializable {
     private byte[] randomKey;
     private String facilityIdentifier;
     private byte[] facilityKey;

@@ -15,7 +15,7 @@ public interface ConnectionController {
 
     void addInfectedUser(InfectedUserMessage infectedUserMessage) throws Exception;
 
-    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException;
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws Exception;
 
     void addCapsules(ArrayList<CapsuleLog> capsules) throws Exception;
 

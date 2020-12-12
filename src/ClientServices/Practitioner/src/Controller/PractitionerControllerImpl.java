@@ -1,5 +1,11 @@
 package Controller;
 
+import Common.HelperObjects.FacilityVisitLogger;
+import Common.HelperObjects.SpentCapsuleLogger;
+import Common.Messages.InfectedUserMessage;
+import Common.Objects.CapsuleLog;
+import Common.Objects.FacilityVisitLog;
+import Common.Objects.InfectedUser;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import GUI.AppController;
@@ -12,17 +18,17 @@ import javafx.stage.Stage;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.ArrayList;
 import java.util.Timer;
 
 public class PractitionerControllerImpl extends Application implements PractitionerController{
     private static final ConnectionController connectionController = new ConnectionControllerImpl();
+    private static final FacilityVisitLogger facilityVisitLogger = new FacilityVisitLogger();
+    private static final SpentCapsuleLogger spentCapsuleLogger = new SpentCapsuleLogger();
     private static Stage primaryStage;
     private static AppController appController;
     private static Pane appPane;
@@ -120,10 +126,30 @@ public class PractitionerControllerImpl extends Application implements Practitio
     public void sendInfectedUserLogs() throws Exception {
         try {
             //Get both log files
-            File facilityVisitLog = getLogFile("Open the visited facilities log file");
-            File spentTokenLog = getLogFile("Open the spent token log file");
+            File facilityVisitLogFile = getLogFile("Open the visited facilities log file");
+            File spentCapsuleLogFile = getLogFile("Open the spent token log file");
 
+            //Read the both log files
+            ArrayList<FacilityVisitLog> facilityVisitLogs = facilityVisitLogger.readFacilityVisitLogsFromFile(facilityVisitLogFile);
+            ArrayList<byte[]> spentTokensLogs = spentCapsuleLogger.readOnlySpentTokensFromFile(spentCapsuleLogFile);
 
+            //Create a new infected user
+            InfectedUser infectedUser = new InfectedUser(spentTokensLogs, facilityVisitLogs);
+
+            //Sign the infected user object
+            Signature sign = Signature.getInstance("SHA256withRSA");
+            sign.initSign(privateKey);
+            ByteArrayOutputStream out = new ByteArrayOutputStream(); //Turn the object into byte array
+            ObjectOutputStream os = new ObjectOutputStream(out);
+            os.writeObject(infectedUser);
+            sign.update(out.toByteArray());
+            byte[] signature = sign.sign();
+
+            //Create an infected user message to send to the matching service
+            InfectedUserMessage infectedUserMessage = new InfectedUserMessage(infectedUser, signature);
+
+            //Send the infected user to the matching service
+            connectionController.addInfectedUser(infectedUserMessage);
         } catch (Exception e) {
             handleException(e);
             throw new Exception("Couldn't send infected user logs: Something went wrong");

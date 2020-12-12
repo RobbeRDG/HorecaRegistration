@@ -6,6 +6,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 
 public interface RegistrarMatchingService extends Remote {
-    byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException;
+    byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException, Exception;
     void addUnacknowledgedTokens(ArrayList<byte[]> unacknowledgedTokens) throws Exception;
 }

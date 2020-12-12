@@ -88,7 +88,7 @@ public class SymbolGenerator {
     private Color determineColorString(int colorValue) {
         switch (colorValue){
             case 0:
-                return Color.BLACK;
+                return Color.DARKKHAKI;
             case 1:
                 return Color.WHITE;
             case 2:

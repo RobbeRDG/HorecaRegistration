@@ -334,7 +334,7 @@ public class RegistrarControllerImpl implements RegistrarController {
     @Override
     public TokenUpdate getTokens(String userIdentifier, LocalDate date) throws Exception {
         ArrayList<byte[]> tokens = new ArrayList<>();
-        HashMap<byte[], byte[]> signatures = new HashMap<>();
+        ArrayList<byte[]> signatures = new ArrayList<>();
 
         try {
             //test if the user is registered
@@ -346,15 +346,6 @@ public class RegistrarControllerImpl implements RegistrarController {
             try {
                 //Test if tokens are already created
                 tokens = dbConnection.getTokens(userIdentifier, date);
-
-                //Create the signature for the tokens
-                for ( byte[] token : tokens) {
-                    sign.update(token);
-                    byte[] signature = sign.sign();
-
-                    //Place the token and signature in signatures
-                    signatures.put(token, signature);
-                }
             } catch (IllegalArgumentException e) {
                 //If no tokens already exist for today, generate them
                 SecureRandom secureRandom = new SecureRandom();
@@ -363,14 +354,8 @@ public class RegistrarControllerImpl implements RegistrarController {
                     byte[] token = new byte[tokenLength];
                     secureRandom.nextBytes(token);
 
-                    //Create signature for token
-                    sign.update(token);
-                    byte[] signature = sign.sign();
-
                     //Add the token to the arraylist
                     tokens.add(token);
-                    //Place the token and signature in signatures
-                    signatures.put(token, signature);
                 }
 
                 //Save the generated tokens in the db
@@ -380,18 +365,17 @@ public class RegistrarControllerImpl implements RegistrarController {
                 connectionController.addTokensToMixingProxy(date, tokens);
             }
 
+            //Create the signature for the tokens
+            for ( byte[] token : tokens) {
+                sign.update(token);
+                byte[] signature = sign.sign();
 
-
-            //Generate the token objects
-            ArrayList<Token> tokenArrayList = new ArrayList<>();
-            for (byte[] token : tokens) {
-                byte[] signature = signatures.get(token);
-
-                tokenArrayList.add(new Token(token, signature, date));
+                //Place the token and signature in signatures
+                signatures.add(signature);
             }
 
             //Return a token update message to the user
-            TokenUpdate tokenUpdate = new TokenUpdate(tokenArrayList);
+            TokenUpdate tokenUpdate = new TokenUpdate(tokens, signatures);
             return tokenUpdate;
         } catch (NotRegisteredException e) {
             throw e;
@@ -406,14 +390,14 @@ public class RegistrarControllerImpl implements RegistrarController {
     ///////////////////////////////////////////////////////////////////
 
     @Override
-    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws Exception {
         try {
             return dbConnection.getFacilityPseudonym(facilityIdentifier, date);
         } catch (NoSuchElementException e) {
             throw e;
         } catch (Exception e) {
             handleException(e);
-            throw e;
+            throw new Exception("Couldn't fetch facility pseudonym: Something went wrong");
         }
     }
 

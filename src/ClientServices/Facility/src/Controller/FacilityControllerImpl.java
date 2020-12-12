@@ -135,7 +135,7 @@ public class FacilityControllerImpl {
             byte[] facilityIdentifierBytes = facilityIdentifier.getBytes();
 
             //Generate and save the QR code
-            qrCodeGenerator.setPath("Resources/QR/" + facilityIdentifier + ".png");
+            qrCodeGenerator.setPath("Resources/QR/" + facilityIdentifier + "_" + day.toString() + ".png");
             qrCodeGenerator.generateQRCode(randomToday, facilityIdentifierBytes, facilityKey);
 
         } catch (Exception e) {

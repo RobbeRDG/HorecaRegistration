@@ -212,7 +212,7 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
         }
     }
 
-    private boolean containsValidFacilityVisits(InfectedUserMessage infectedUserMessage) throws SQLException, NoSuchAlgorithmException {
+    private boolean containsValidFacilityVisits(InfectedUserMessage infectedUserMessage) throws Exception {
         ArrayList<FacilityVisitLog> facilityVisitLogs = infectedUserMessage.getInfectedUser().getInfectedFacilityIntervals();
 
         for (FacilityVisitLog facilityVisitLog : facilityVisitLogs) {

@@ -8,6 +8,7 @@ import Common.RMIInterfaces.Registrar.RegistrarFacilityService;
 import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
 import Connection.Registrar.Facility.RegistrarFacilityServiceImpl;
 import Common.RMIInterfaces.Registrar.RegistrarUserService;
+import Connection.Registrar.MatchingService.RegistrarMatchingServiceImpl;
 import Connection.Registrar.User.RegistrarUserServiceImpl;
 import Controller.RegistrarController;
 
@@ -24,7 +25,7 @@ public class ConnectionControllerImpl implements ConnectionController{
     private static RegistrarController registrarController;
     private static RegistrarFacilityService registrarFacilityServer;
     private static RegistrarUserService registrarUserServer;
-    private static RegistrarUserService registrarMatchingServiceServer;
+    private static RegistrarMatchingService registrarMatchingServiceServer;
     private static MixingProxyRegistrarService mixingProxyRegistrarService;
     private static final int registrarFacilityRMIServerPort = 2222;
     private static final int registrarUserRMIServerPort = 3333;
@@ -35,6 +36,7 @@ public class ConnectionControllerImpl implements ConnectionController{
         this.registrarController = registrarController;
         registrarFacilityServer = new RegistrarFacilityServiceImpl(this);
         registrarUserServer = new RegistrarUserServiceImpl(this);
+        registrarMatchingServiceServer = new RegistrarMatchingServiceImpl(this);
     }
 
     public void startServerConnections() throws RemoteException {
@@ -77,7 +79,7 @@ public class ConnectionControllerImpl implements ConnectionController{
     }
 
     @Override
-    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws Exception {
         return registrarController.getFacilityPseudonym(facilityIdentifier, date);
     }
 

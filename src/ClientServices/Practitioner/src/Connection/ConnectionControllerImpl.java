@@ -1,5 +1,6 @@
 package Connection;
 
+import Common.Messages.InfectedUserMessage;
 import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
 
 import java.rmi.NotBoundException;
@@ -22,4 +23,11 @@ public class ConnectionControllerImpl implements ConnectionController{
         matchingServicePractitioner = (MatchingServicePractitioner) matchingServicePractitionerRegistry
                 .lookup("MatchingServicePractitioner");
     }
+
+    @Override
+    public void addInfectedUser(InfectedUserMessage message) throws Exception {
+        matchingServicePractitioner.addInfectedUser(message);
+    }
+
+
 }

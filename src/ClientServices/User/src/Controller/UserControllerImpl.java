@@ -1,6 +1,8 @@
 package Controller;
 
 import Common.Exceptions.NotValidException;
+import Common.HelperObjects.FacilityVisitLogger;
+import Common.HelperObjects.SpentCapsuleLogger;
 import Common.Messages.CapsuleVerification;
 import Common.Messages.TokenUpdate;
 import Common.Objects.CapsuleLog;
@@ -39,12 +41,13 @@ public class UserControllerImpl extends Application implements UserController{
     private static Pane loginPane;
     private static Pane appPane;
     private static String userIdentifier;
-    private static final TokenWallet tokenWallet = new TokenWallet();
+    private static TokenWallet tokenWallet;
     private static final QRReader qrReader = new QRReader();
     private static final SymbolGenerator symbolGenerator = new SymbolGenerator();
     private static final FacilityVisitLogger facilityVisitLogger = new FacilityVisitLogger();
     private static final SpentCapsuleLogger spentCapsuleLogger = new SpentCapsuleLogger();
     private static Timer replaceTokenTimer;
+    private static PublicKey registrarPublicKey;
 
     ///////////////////////////////////////////////////////////////////
     ///         INTERNAL USER LOGIC
@@ -70,8 +73,11 @@ public class UserControllerImpl extends Application implements UserController{
             //load the chat and login controller
             loadControllers();
 
-            //Set the tokenwallet's public key
-            tokenWallet.setRegistrarPublicKey(readRegistrarPublicKey());
+            //Initialize the token wallet
+            tokenWallet = new TokenWallet(this);
+
+            //read the registrar public key
+            registrarPublicKey = readRegistrarPublicKey();
 
             //show the login screen
             showLogin();
@@ -135,6 +141,11 @@ public class UserControllerImpl extends Application implements UserController{
         }
     }
 
+    @Override
+    public PublicKey getRegistrarPublicKey() {
+        return registrarPublicKey;
+    }
+
 
 
     ///////////////////////////////////////////////////////////////////
@@ -150,6 +161,7 @@ public class UserControllerImpl extends Application implements UserController{
     public void setUserIdentifier(String phoneNumber) {
         userIdentifier = phoneNumber;
         facilityVisitLogger.setLogFileName(phoneNumber);
+        spentCapsuleLogger.setLogFileName(phoneNumber);
     }
 
     @Override
@@ -157,11 +169,11 @@ public class UserControllerImpl extends Application implements UserController{
         try {
             TokenUpdate update = connectionController.getTodaysTokens(userIdentifier);
 
+            //Test if the signatures match
+            if (!tokenWallet.signaturesMatch(update)) throw new SignatureException("Couldn't get today's tokens: signatures don't match");
+
             //Place the tokens in the Token Wallet
             tokenWallet.updateTokens(update);
-
-            //Test if the signatures match
-            if (!tokenWallet.signaturesMatch()) throw new SignatureException("Couldn't get today's tokens: signatures don't match");
         } catch (Exception e) {
             handleException(e);
             throw e;
@@ -178,6 +190,7 @@ public class UserControllerImpl extends Application implements UserController{
             handleException(e);
         }
     }
+
 
 
     @Override

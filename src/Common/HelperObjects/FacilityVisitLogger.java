@@ -1,12 +1,9 @@
-package Controller.HelperObjects;
+package Common.HelperObjects;
 
 import Common.Objects.FacilityRegisterInformation;
 import Common.Objects.FacilityVisitLog;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,25 +34,20 @@ public class FacilityVisitLogger {
             leaveTime = LocalDateTime.now();
 
             //Refresh the log file
-            refreshLogs();
+            writeLogs();
 
             //Reset the visit logger for a new visit
             resetLogger();
         }
     }
 
-    private void refreshLogs() throws IOException {
+    private void writeLogs() throws IOException {
+        //Create the log file
         File facilityVisitLogFile = new File(logFileBasePath + logFileName + ".txt");
         facilityVisitLogFile.createNewFile();
 
-        ArrayList<FacilityVisitLog> facilityVisitLogEntries = new ArrayList<>();
-
-        //Also read all previous logs
-        Scanner sc = new Scanner(facilityVisitLogFile);
-        while (sc.hasNextLine()) {
-            facilityVisitLogEntries.add(FacilityVisitLog.fromBase64String(sc.nextLine()));
-        }
-        sc.close();
+        //Read all previous logs
+        ArrayList<FacilityVisitLog> facilityVisitLogEntries = readFacilityVisitLogsFromFile(facilityVisitLogFile);
 
         //Purge the expired logs
         facilityVisitLogEntries.removeIf(facilityVisitLog -> facilityVisitLog.getEntryTime().toLocalDate().isBefore(purgeDate));
@@ -77,6 +69,18 @@ public class FacilityVisitLogger {
         currentFacilityRegisterInformation = null;
         entryTime = null;
         leaveTime = null;
+    }
+
+    public ArrayList<FacilityVisitLog> readFacilityVisitLogsFromFile(File facilityVisitLogFile) throws FileNotFoundException {
+        ArrayList<FacilityVisitLog> facilityVisitLogs = new ArrayList<>();
+
+        Scanner sc = new Scanner(facilityVisitLogFile);
+        while (sc.hasNextLine()) {
+            facilityVisitLogs.add(FacilityVisitLog.fromBase64String(sc.nextLine()));
+        }
+        sc.close();
+
+        return facilityVisitLogs;
     }
 
     public void setLogFileName(String logFileName) {

@@ -80,7 +80,7 @@ public class ConnectionControllerImpl implements ConnectionController{
         matchingServiceController.addInfectedUser(infectedUserMessage);
     }
 
-    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException {
+    public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws Exception {
         return registrarMatchingService.getFacilityPseudonym(facilityIdentifier, date);
     }
 

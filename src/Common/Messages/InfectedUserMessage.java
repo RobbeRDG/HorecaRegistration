@@ -5,8 +5,9 @@ import Common.Objects.InfectedUser;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
-public class InfectedUserMessage {
+public class InfectedUserMessage implements Serializable {
     private InfectedUser infectedUser;
     private byte[] signature;
 

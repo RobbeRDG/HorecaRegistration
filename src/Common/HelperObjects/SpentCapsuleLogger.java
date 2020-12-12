@@ -1,11 +1,8 @@
-package Controller.HelperObjects;
+package Common.HelperObjects;
 
 import Common.Objects.CapsuleLog;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -21,17 +18,12 @@ public class SpentCapsuleLogger {
     }
 
     public void logCapsule(CapsuleLog capsuleLog) throws IOException {
+        //Create the log file
         File spentCapsuleLogFile = new File(logFileBasePath + logFileName + ".txt");
         spentCapsuleLogFile.createNewFile();
 
-        ArrayList<CapsuleLog> spentCapsuleLogEntries = new ArrayList<>();
-
         //Read all previous logs
-        Scanner sc = new Scanner(spentCapsuleLogFile);
-        while (sc.hasNextLine()) {
-            spentCapsuleLogEntries.add(CapsuleLog.fromBase64String(sc.nextLine()));
-        }
-        sc.close();
+        ArrayList<CapsuleLog> spentCapsuleLogEntries = readCapsuleLogsFromFile(spentCapsuleLogFile);
 
         //Purge the expired logs
         spentCapsuleLogEntries.removeIf(spentCapsuleLog -> spentCapsuleLog.getStartTime().toLocalDate().isBefore(purgeDate));
@@ -47,5 +39,33 @@ public class SpentCapsuleLogger {
             out.newLine();
         }
         out.close();
+    }
+
+    public ArrayList<CapsuleLog> readCapsuleLogsFromFile(File capsuleLogFile) throws FileNotFoundException {
+        ArrayList<CapsuleLog> capsuleLogs = new ArrayList<>();
+
+        Scanner sc = new Scanner(capsuleLogFile);
+        while (sc.hasNextLine()) {
+            capsuleLogs.add(CapsuleLog.fromBase64String(sc.nextLine()));
+        }
+        sc.close();
+
+        return capsuleLogs;
+    }
+
+    public ArrayList<byte[]> readOnlySpentTokensFromFile(File capsuleLogFile) throws FileNotFoundException {
+        ArrayList<byte[]> capsuleLogs = new ArrayList<>();
+
+        Scanner sc = new Scanner(capsuleLogFile);
+        while (sc.hasNextLine()) {
+            capsuleLogs.add(CapsuleLog.fromBase64String(sc.nextLine()).getToken());
+        }
+        sc.close();
+
+        return capsuleLogs;
+    }
+
+    public void setLogFileName(String logFileName) {
+        this.logFileName = logFileName;
     }
 }

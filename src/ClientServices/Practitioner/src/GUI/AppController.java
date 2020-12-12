@@ -19,7 +19,16 @@ public class AppController {
 
     @FXML
     public void handleSendInfectedLogsButton(javafx.event.ActionEvent actionEvent) throws Exception {
-        practitionerController.sendInfectedUserLogs();
+        try {
+            practitionerController.sendInfectedUserLogs();
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("ERROR");
+            alert.setHeaderText(null);
+            alert.setContentText(e.getMessage());
+            alert.show();
+            return;
+        }
     }
 
 
