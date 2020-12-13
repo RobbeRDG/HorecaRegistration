@@ -43,7 +43,6 @@ public class MixingProxyControllerImpl extends Application implements MixingProx
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
     ///////////////////////////////////////////////////////////////////
-
     @Override
     public void start(Stage primaryStage) throws Exception {
         try {
@@ -210,7 +209,6 @@ public class MixingProxyControllerImpl extends Application implements MixingProx
     ///////////////////////////////////////////////////////////////////
     ///         TOKEN REGISTRATION
     ///////////////////////////////////////////////////////////////////
-
     @Override
     public CapsuleVerification registerToken(CapsuleLog capsuleLog) throws Exception {
         try {
@@ -280,7 +278,6 @@ public class MixingProxyControllerImpl extends Application implements MixingProx
     ///////////////////////////////////////////////////////////////////
     ///         INFECTED USER LOGIC
     ///////////////////////////////////////////////////////////////////
-
     @Override
     public void acknowledgeTokens(ArrayList<byte[]> acknowledgeTokens) throws Exception {
         try {

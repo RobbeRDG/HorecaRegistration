@@ -46,8 +46,6 @@ public class MatchingServiceControllerImpl extends Application implements Matchi
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
     ///////////////////////////////////////////////////////////////////
-
-
     @Override
     public void start(Stage primaryStage) throws Exception {
         try {
@@ -217,90 +215,6 @@ public class MatchingServiceControllerImpl extends Application implements Matchi
         }
     }
 
-    private static void handleException(Exception e) {
-        e.printStackTrace();
-    }
-
-    @Override
-    public void addInfectedUser(InfectedUserMessage infectedUserMessage) throws Exception {
-        try {
-            //Test if the message signature is valid
-            if (!isValidMessageSignature(infectedUserMessage)) throw new SignatureException(
-                    "Couldn't insert infected user: message signature doesn't match");
-
-            //Test if the facility visits in the message itself are valid
-            if (!containsValidFacilityVisits(infectedUserMessage)) throw new NotValidException(
-                    "Couldn't insert infected user: logs contain invalid facility");
-
-            //Set the critical capsules with the visited facility logs
-            dbConnection.markCriticalCapsules(infectedUserMessage.getInfectedUser().getInfectedFacilityIntervals());
-
-
-            //Set the infected user tokens to informed
-            dbConnection.markInformed(infectedUserMessage.getInfectedUser().getInfectedTokens());
-
-            //Show the new capsule contents
-            appController.showCapsules(dbConnection.getAllCapsules());
-        } catch (SignatureException e) {
-            throw e;
-        } catch (Exception e) {
-            handleException(e);
-            throw new Exception("Couldn't insert infected user: something went wrong");
-        }
-    }
-
-    public void sendUnacknowledgedTokens() {
-        try {
-            ArrayList<byte[]> unacknowledgedTokens = dbConnection.getUnacknowledgedTokens(LocalDate.now().minusDays(uninformedRevealPeriodInDays));
-            connectionController.addUnacknowledgedTokens(unacknowledgedTokens);
-
-            //Set the send tokens as acknowledged
-            dbConnection.markInformed(unacknowledgedTokens);
-
-            //Set a timer task to send the unacknowledged tokens to the registrar
-            java.util.Date taskDate = Date.from(LocalDateTime.now().plusDays(uninformedRevealPeriodInDays).atZone(ZoneId.systemDefault()).toInstant());
-            Timer sendUninformedTimer = new Timer();
-            sendUninformedTimer.schedule(new SendUnacknowledgedTokensCaller(this), taskDate );
-        } catch (Exception e) {
-            handleException(e);
-        }
-    }
-
-    @Override
-    public void addCapsules(ArrayList<CapsuleLog> capsules) throws Exception {
-        try {
-            dbConnection.addCapsules(capsules);
-
-            //Show the new capsule contents
-            appController.showCapsules(dbConnection.getAllCapsules());
-        } catch (Exception e) {
-            handleException(e);
-            throw new Exception("Couldn't upload the capsule logs: Something went wrong");
-        }
-    }
-
-    @Override
-    public void submitAcknowledgements(ArrayList<byte[]> acknowledgementTokens) throws Exception {
-        try {
-            dbConnection.markInformed(acknowledgementTokens);
-
-            //Show the new capsule contents
-            appController.showCapsules(dbConnection.getAllCapsules());
-        } catch (Exception e) {
-            handleException(e);
-            throw new Exception("Couldn't acknowledge tokens: Something went wrong");
-        }
-    }
-
-    @Override
-    public ArrayList<CapsuleLog> getInfectedCapsules() throws Exception {
-        try {
-            return dbConnection.getInfectedCapsules();
-        } catch (Exception e) {
-            throw new Exception("Couldn't fetch infected capsules: something went wrong");
-        }
-    }
-
     private boolean containsValidFacilityVisits(InfectedUserMessage infectedUserMessage) throws Exception {
         ArrayList<FacilityVisitLog> facilityVisitLogs = infectedUserMessage.getInfectedUser().getInfectedFacilityIntervals();
 
@@ -345,5 +259,112 @@ public class MatchingServiceControllerImpl extends Application implements Matchi
         sign.update(infectedUserMessage.getInfectedUserBytes());
         return sign.verify(signature);
     }
+
+    private static void handleException(Exception e) {
+        e.printStackTrace();
+    }
+
+
+
+    ///////////////////////////////////////////////////////////////////
+    ///         PRACTITIONER LOGIC
+    ///////////////////////////////////////////////////////////////////
+    @Override
+    public void addInfectedUser(InfectedUserMessage infectedUserMessage) throws Exception {
+        try {
+            //Test if the message signature is valid
+            if (!isValidMessageSignature(infectedUserMessage)) throw new SignatureException(
+                    "Couldn't insert infected user: message signature doesn't match");
+
+            //Test if the facility visits in the message itself are valid
+            if (!containsValidFacilityVisits(infectedUserMessage)) throw new NotValidException(
+                    "Couldn't insert infected user: logs contain invalid facility");
+
+            //Set the critical capsules with the visited facility logs
+            dbConnection.markCriticalCapsules(infectedUserMessage.getInfectedUser().getInfectedFacilityIntervals());
+
+
+            //Set the infected user tokens to informed
+            dbConnection.markInformed(infectedUserMessage.getInfectedUser().getInfectedTokens());
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
+        } catch (SignatureException e) {
+            throw e;
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't insert infected user: something went wrong");
+        }
+    }
+
+
+
+    @Override
+    public void submitAcknowledgements(ArrayList<byte[]> acknowledgementTokens) throws Exception {
+        try {
+            dbConnection.markInformed(acknowledgementTokens);
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't acknowledge tokens: Something went wrong");
+        }
+    }
+
+
+    ///////////////////////////////////////////////////////////////////
+    ///         MIXING PROXY LOGIC
+    ///////////////////////////////////////////////////////////////////
+    @Override
+    public void addCapsules(ArrayList<CapsuleLog> capsules) throws Exception {
+        try {
+            dbConnection.addCapsules(capsules);
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't upload the capsule logs: Something went wrong");
+        }
+    }
+
+
+
+    ///////////////////////////////////////////////////////////////////
+    ///         REGISTRAR LOGIC
+    ///////////////////////////////////////////////////////////////////
+    public void sendUnacknowledgedTokens() {
+        try {
+            ArrayList<byte[]> unacknowledgedTokens = dbConnection.getUnacknowledgedTokens(LocalDate.now().minusDays(uninformedRevealPeriodInDays));
+            connectionController.addUnacknowledgedTokens(unacknowledgedTokens);
+
+            //Set the send tokens as acknowledged
+            dbConnection.markInformed(unacknowledgedTokens);
+
+            //Set a timer task to send the unacknowledged tokens to the registrar
+            java.util.Date taskDate = Date.from(LocalDateTime.now().plusDays(uninformedRevealPeriodInDays).atZone(ZoneId.systemDefault()).toInstant());
+            Timer sendUninformedTimer = new Timer();
+            sendUninformedTimer.schedule(new SendUnacknowledgedTokensCaller(this), taskDate );
+        } catch (Exception e) {
+            handleException(e);
+        }
+    }
+
+
+
+    ///////////////////////////////////////////////////////////////////
+    ///         USER LOGIC
+    ///////////////////////////////////////////////////////////////////
+    @Override
+    public ArrayList<CapsuleLog> getInfectedCapsules() throws Exception {
+        try {
+            return dbConnection.getInfectedCapsules();
+        } catch (Exception e) {
+            throw new Exception("Couldn't fetch infected capsules: something went wrong");
+        }
+    }
+
+
 
 }

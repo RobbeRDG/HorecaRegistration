@@ -47,7 +47,6 @@ public class RegistrarControllerImpl extends Application implements RegistrarCon
     ///////////////////////////////////////////////////////////////////
     ///         REGISTRAR LOGIC
     ///////////////////////////////////////////////////////////////////
-
     private static PublicKey readPublicKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, ClassNotFoundException {
         InputStream in = new FileInputStream("Resources/private/keys/registrar/registrarPublic.txt");
         ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
@@ -444,10 +443,11 @@ public class RegistrarControllerImpl extends Application implements RegistrarCon
         }
     }
 
+
+
     ///////////////////////////////////////////////////////////////////
     ///         MATCHING SERVICE LOGIC
     ///////////////////////////////////////////////////////////////////
-
     @Override
     public byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws Exception {
         try {
