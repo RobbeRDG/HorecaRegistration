@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 
 public class Token implements Serializable {
-    static final long serialVersionUID = 1L;
+    static final long serialVersionUID = 9L;
     private byte[] tokenBytes;
     private byte[] signature;
     private LocalDate date;

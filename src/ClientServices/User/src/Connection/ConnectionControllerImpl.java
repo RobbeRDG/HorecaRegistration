@@ -13,6 +13,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 public class ConnectionControllerImpl implements ConnectionController{
     private static final int registrarUserRMIClientPort = 3333;
@@ -57,6 +58,16 @@ public class ConnectionControllerImpl implements ConnectionController{
     @Override
     public CapsuleVerification registerCapsule(CapsuleLog capsuleLog) throws Exception {
         return mixingProxyUserService.registerCapsule(capsuleLog);
+    }
+
+    @Override
+    public ArrayList<CapsuleLog> getInfectedCapsules() throws Exception {
+        return matchingServiceUser.getInfectedCapsules();
+    }
+
+    @Override
+    public void acknowledgeTokens(ArrayList<byte[]> acknowledgeTokens) throws Exception {
+        mixingProxyUserService.acknowledgeTokens(acknowledgeTokens);
     }
 
 }

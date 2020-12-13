@@ -1,5 +1,6 @@
 package Controller;
 
+import Common.Exceptions.AlreadyRegisteredException;
 import Common.Messages.PseudonymUpdate;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
@@ -13,7 +14,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Scanner;
 
-public class FacilityControllerImpl {
+public class FacilityControllerImpl implements FacilityController {
     private static final QRGenerator qrCodeGenerator = new QRGenerator();
     private ConnectionController connectionController = new ConnectionControllerImpl();
     private static String facilityIdentifier;
@@ -51,23 +52,28 @@ public class FacilityControllerImpl {
             //Connect to the registrar services
             connectionController.connectToServices();
 
+            //Register to the registrar
+            try {
+                registerFacility();
+                System.out.println("New facility registered");
+            } catch (AlreadyRegisteredException e) {
+                System.out.println("Logged in");
+            }
+
+
             //Choose between registering and getting the QR-code
             while (true) {
                 System.out.println("############################################");
                 System.out.println("Choose operation:");
-                System.out.println("1) Register facility");
-                System.out.println("2) Generate QR-Code");
-                System.out.println("3) Close");
+                System.out.println("1) Generate QR-Code");
+                System.out.println("2) Close");
 
                 int choice = Integer.parseInt(sc.nextLine());
                 switch (choice) {
                     case 1:
-                        registerFacility();
-                        break;
-                    case 2:
                         generateQR();
                         break;
-                    case 3:
+                    case 2:
                         return;
                     default:
                         System.out.println("This is not an option");

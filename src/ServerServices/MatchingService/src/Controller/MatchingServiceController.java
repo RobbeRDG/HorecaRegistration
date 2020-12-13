@@ -19,4 +19,5 @@ public interface MatchingServiceController {
 
     ArrayList<CapsuleLog> getInfectedCapsules() throws Exception;
     void sendUnacknowledgedTokens();
+    void deleteExpiredCapsules();
 }

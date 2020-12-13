@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class InfectedUser implements Serializable {
+    static final long serialVersionUID = 1L;
     private ArrayList<byte[]> infectedTokens;
     private ArrayList<FacilityVisitLog> infectedFacilityIntervals;
 

@@ -11,4 +11,5 @@ public interface ConnectionController {
     PseudonymUpdate getPseudonyms(String facilityIdentifier, int year, int monthIndex) throws Exception;
 
     void registerCateringFacility(String facilityIdentifier) throws Exception;
+
 }

@@ -6,6 +6,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 
 public class PseudonymUpdate implements Serializable {
+    static final long serialVersionUID = 6L;
     private HashMap<LocalDate, byte[]> pseudonyms;
     public PseudonymUpdate(HashMap<LocalDate, byte[]> pseudonyms) {
         this.pseudonyms = pseudonyms;

@@ -19,4 +19,6 @@ public interface UserController {
     void leaveFacility() throws Exception;
     void refreshToken();
     PublicKey getRegistrarPublicKey();
+
+    boolean checkInfectionStatus() throws Exception;
 }

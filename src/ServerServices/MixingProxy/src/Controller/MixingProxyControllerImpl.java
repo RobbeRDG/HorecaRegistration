@@ -6,6 +6,7 @@ import Common.Objects.CapsuleLog;
 import Common.Objects.Token;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
+import Controller.HelperObjects.FlushCapsulesCaller;
 import Data.DBConnection;
 
 import java.io.*;
@@ -14,17 +15,22 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Timer;
 
 public class MixingProxyControllerImpl implements MixingProxyController{
     private static DBConnection dbConnection;
     private static ConnectionController connectionController;
     private static PrivateKey mixingProxyPrivateKey;
     private static PublicKey mixingProxyPublicKey;
+    private static final int flushPeriodInSeconds = 60;
 
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
@@ -93,8 +99,14 @@ public class MixingProxyControllerImpl implements MixingProxyController{
             //Start the connection server
             connectionController.startServerConnections();
 
+            //Sleep for 10 sec
+            Thread.sleep(10000);
+
             //Start the clientConnections
             connectionController.startClientConnections();
+
+            //Flush capsules
+            flushCapsules();
 
             System.out.println("Mixing proxy ready");
         } catch (Exception e){
@@ -114,6 +126,32 @@ public class MixingProxyControllerImpl implements MixingProxyController{
             System.exit(status);
         }
     }
+
+    public void flushCapsules() {
+        try {
+            //Get all capsules
+            ArrayList<CapsuleLog> capsuleLogs = dbConnection.extractCapsules();
+
+            //Send all capsules to the matching service
+            Collections.shuffle(capsuleLogs);
+            connectionController.flushCapsules(capsuleLogs);
+
+            //Delete all the recently fetched capsules
+            dbConnection.deleteCapsules(capsuleLogs);
+
+            //Set a new timer for the next flush
+            java.util.Date flushDate = Date.from(LocalDateTime.now().plusSeconds(flushPeriodInSeconds).atZone(ZoneId.systemDefault()).toInstant());
+            Timer nextFlush = new Timer();
+            nextFlush.schedule(new FlushCapsulesCaller(this), flushDate);
+
+            System.out.println("Flushed the current capsules");
+        } catch (Exception e) {
+            handleException(e);
+        }
+
+    }
+
+
 
     private static void handleException(Exception e) {
         e.printStackTrace();
@@ -187,5 +225,19 @@ public class MixingProxyControllerImpl implements MixingProxyController{
             return startDate.isEqual(validDate);
         } else return false;
 
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    ///         INFECTED USER LOGIC
+    ///////////////////////////////////////////////////////////////////
+
+    @Override
+    public void acknowledgeTokens(ArrayList<byte[]> acknowledgeTokens) throws Exception {
+        try {
+            connectionController.forwardAcknowledgeTokens(acknowledgeTokens);
+        } catch (Exception e) {
+            handleException(e);
+            throw new Exception("Couldn't acknowledge infected tokens: Something went wrong");
+        }
     }
 }

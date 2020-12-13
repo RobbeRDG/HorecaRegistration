@@ -42,6 +42,31 @@ public class AppController {
     }
 
     @FXML
+    public void handleCheckInfectionStatusButton(javafx.event.ActionEvent actionEvent) {
+        try {
+            boolean possibleInfection = userController.checkInfectionStatus();
+
+            //Show an alert
+            String headerText = "";
+            if (possibleInfection) headerText = "High risk: an infected token has been found in your logs";
+            else headerText = "No Risk: no infected tokens have been found in your logs";
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("STATUS");
+            alert.setHeaderText(null);
+            alert.setContentText(headerText);
+            alert.show();
+            return;
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("ERROR");
+            alert.setHeaderText(null);
+            alert.setContentText(e.getMessage());
+            alert.show();
+            return;
+        }
+    }
+
+    @FXML
     public void handleRegisterToFacilityButton(javafx.event.ActionEvent actionEvent)  {
         if (visitingFacility) {
             try {

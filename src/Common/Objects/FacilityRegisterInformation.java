@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Base64;
 
 public class FacilityRegisterInformation implements Serializable {
+    static final long serialVersionUID = 3L;
     private byte[] randomKey;
     private String facilityIdentifier;
     private byte[] facilityKey;

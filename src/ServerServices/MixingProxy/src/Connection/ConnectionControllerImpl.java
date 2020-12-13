@@ -71,4 +71,19 @@ public class ConnectionControllerImpl implements ConnectionController {
 
         System.out.println("Started all RMI client instances");
     }
+
+    @Override
+    public void flushCapsules(ArrayList<CapsuleLog> capsuleLogs) throws Exception {
+        matchingServiceMixingProxy.submitCapsules(capsuleLogs);
+    }
+
+    @Override
+    public void acknowledgeTokens(ArrayList<byte[]> acknowledgeTokens) throws Exception {
+        mixingProxyController.acknowledgeTokens(acknowledgeTokens);
+    }
+
+    @Override
+    public void forwardAcknowledgeTokens(ArrayList<byte[]> acknowledgeTokens) throws Exception {
+        matchingServiceMixingProxy.submitAcknowledgements(acknowledgeTokens);
+    }
 }

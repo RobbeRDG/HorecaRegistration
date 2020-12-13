@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 
 public class CapsuleLog implements Serializable {
+    static final long serialVersionUID = 4L;
     private byte[] token;
     private LocalDateTime startTime;
     private LocalDateTime stopTime;

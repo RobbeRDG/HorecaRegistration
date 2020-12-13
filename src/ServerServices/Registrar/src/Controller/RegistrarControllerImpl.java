@@ -104,6 +104,11 @@ public class RegistrarControllerImpl implements RegistrarController {
 
             //Start the server and client connections
             connectionController.startServerConnections();
+
+            //Sleep for 10 sec
+            Thread.sleep(10000);
+
+            //Connect to the servers
             connectionController.startClientConnections();
 
             System.out.println("Registrar ready");

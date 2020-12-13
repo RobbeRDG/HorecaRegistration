@@ -87,7 +87,7 @@ public class DBConnection {
 
     public void addCapsules(ArrayList<CapsuleLog> capsules) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
-                "INSERT INTO capsules(token, facility_key, start_time, stop_time, received_time) VALUES (?, ?, ?, ?, ?)");
+                "INSERT INTO capsules(token, facility_key, start_time, stop_time) VALUES (?, ?, ?, ?)");
 
         for (CapsuleLog capsuleLog: capsules) {
             //Extract the capsule info for the db tables
@@ -95,14 +95,12 @@ public class DBConnection {
             byte[] facilityKey = capsuleLog.getFacilityKey();
             java.sql.Timestamp startTime = java.sql.Timestamp.valueOf(capsuleLog.getStartTime());
             java.sql.Timestamp stopTime = java.sql.Timestamp.valueOf(capsuleLog.getStopTime());
-            java.sql.Timestamp receivedTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
 
             //Prepare the query
             stmt.setBytes(1, token);
             stmt.setBytes(2, facilityKey);
             stmt.setTimestamp(3, startTime);
             stmt.setTimestamp(4, stopTime);
-            stmt.setTimestamp(5, receivedTime);
             stmt.addBatch();
         }
 
@@ -129,5 +127,15 @@ public class DBConnection {
         }
 
         return infectedCapsules;
+    }
+
+    public void deleteExpiredCapsules(LocalDate expirationDate) throws SQLException {
+        //Create the query
+        PreparedStatement stmt = conn.prepareStatement(
+                "DELETE FROM capsules WHERE DATE(start_time) <= ?");
+        stmt.setDate(1, Date.valueOf(expirationDate));
+
+        //Run Querry
+        stmt.executeUpdate();
     }
 }

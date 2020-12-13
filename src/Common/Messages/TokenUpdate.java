@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class TokenUpdate implements Serializable {
-    static final long serialVersionUID = 1L;
+    static final long serialVersionUID = 5L;
     private ArrayList<byte[]> tokenList;
     private ArrayList<byte[]> tokenSignatures;
 

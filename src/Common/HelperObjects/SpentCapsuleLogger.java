@@ -41,7 +41,12 @@ public class SpentCapsuleLogger {
         out.close();
     }
 
-    public ArrayList<CapsuleLog> readCapsuleLogsFromFile(File capsuleLogFile) throws FileNotFoundException {
+    public ArrayList<CapsuleLog> readCapsules() throws FileNotFoundException {
+        File spentCapsuleLogFile = new File(logFileBasePath + logFileName + ".txt");
+        return readCapsuleLogsFromFile(spentCapsuleLogFile);
+    }
+
+    public static ArrayList<CapsuleLog> readCapsuleLogsFromFile(File capsuleLogFile) throws FileNotFoundException {
         ArrayList<CapsuleLog> capsuleLogs = new ArrayList<>();
 
         Scanner sc = new Scanner(capsuleLogFile);
@@ -53,7 +58,7 @@ public class SpentCapsuleLogger {
         return capsuleLogs;
     }
 
-    public ArrayList<byte[]> readOnlySpentTokensFromFile(File capsuleLogFile) throws FileNotFoundException {
+    public static ArrayList<byte[]> readOnlySpentTokensFromFile(File capsuleLogFile) throws FileNotFoundException {
         ArrayList<byte[]> capsuleLogs = new ArrayList<>();
 
         Scanner sc = new Scanner(capsuleLogFile);

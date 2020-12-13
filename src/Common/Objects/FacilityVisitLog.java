@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 
 public class FacilityVisitLog implements Serializable {
+    static final long serialVersionUID = 2L;
     private LocalDateTime entryTime;
     private LocalDateTime leaveTime;
     private FacilityRegisterInformation visitedFacilityRegisterInformation;

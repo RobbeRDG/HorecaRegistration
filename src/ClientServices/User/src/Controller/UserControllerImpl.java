@@ -31,6 +31,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.sql.Date;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Timer;
 
 public class UserControllerImpl extends Application implements UserController{
@@ -146,6 +148,51 @@ public class UserControllerImpl extends Application implements UserController{
         return registrarPublicKey;
     }
 
+    @Override
+    public boolean checkInfectionStatus() throws Exception {
+        try {
+            //Get all infected capsule logs from matching server
+            ArrayList<CapsuleLog> infectedCapsules = connectionController.getInfectedCapsules();
+
+            //Read all capsule logs from log file
+            ArrayList<CapsuleLog> loggedCapsules = spentCapsuleLogger.readCapsules();
+
+            //Compare if the user log contains infected capsules
+            ArrayList<byte[]> acknowledgeTokens = compareInfectedCapsules(infectedCapsules, loggedCapsules);
+
+            //Send the acknowledgement tokens to the matching server
+            connectionController.acknowledgeTokens(acknowledgeTokens);
+
+            if (acknowledgeTokens.isEmpty()) return false;
+            else return true;
+        } catch (Exception e) {
+            handleException(e);
+            throw e;
+        }
+    }
+
+    private ArrayList<byte[]> compareInfectedCapsules(ArrayList<CapsuleLog> infectedCapsules, ArrayList<CapsuleLog> loggedCapsules) {
+        ArrayList<byte[]> acknowledgeTokens = new ArrayList<>();
+
+        //Get all the tokens from the infected and logged capsules
+        ArrayList<byte[]> loggedTokes = new ArrayList<>();
+        ArrayList<byte[]> infectedTokens = new ArrayList<>();
+        for (CapsuleLog loggedCapsule : loggedCapsules) {
+           loggedTokes.add(loggedCapsule.getToken());
+        }
+        for (CapsuleLog infectedCapsule : infectedCapsules) {
+            infectedTokens.add(infectedCapsule.getToken());
+        }
+
+        //Test if the logged tokens contain infected tokens
+        for ( byte[] loggedToken : loggedTokes) {
+            for ( byte[] infectedToken : infectedTokens) {
+                if (Arrays.equals(loggedToken, infectedToken)) acknowledgeTokens.add(loggedToken);
+            }
+        }
+
+        return acknowledgeTokens;
+    }
 
 
     ///////////////////////////////////////////////////////////////////

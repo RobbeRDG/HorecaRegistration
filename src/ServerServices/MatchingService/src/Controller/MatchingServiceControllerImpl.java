@@ -6,6 +6,7 @@ import Common.Objects.CapsuleLog;
 import Common.Objects.FacilityVisitLog;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
+import Controller.HelperObjects.DeleteExpiredCaller;
 import Controller.HelperObjects.SendUnacknowledgedTokensCaller;
 import Data.DBConnection;
 
@@ -32,6 +33,7 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
     private static PublicKey mixingProxyPublicKey;
     private static PublicKey practitionerPublicKey;
     private static final int uninformedRevealPeriodInDays = 1;
+    private static final int expirationPeriodInDays = 30;
 
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
@@ -118,8 +120,34 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
             //Start the connection server
             connectionController.startServerConnections();
 
+            //Sleep for 10 sec
+            Thread.sleep(10000);
+
+            //Start the client connections
+            connectionController.startClientConnections();
+
+            //Delete the expired capsules
+            deleteExpiredCapsules();
+
             System.out.println("Matching service ready");
         } catch (Exception e){
+            handleException(e);
+        }
+    }
+
+    public void deleteExpiredCapsules() {
+        try {
+            //set the expirationDate
+            LocalDate expirationDate = LocalDate.now().minusDays(expirationPeriodInDays);
+
+            //Remove the expired capsules from the db
+            dbConnection.deleteExpiredCapsules(expirationDate);
+
+            //Plan the next db flush
+            java.util.Date taskDate = Date.from(LocalDateTime.now().plusDays(1).atZone(ZoneId.systemDefault()).toInstant());
+            Timer deleteExpiredTimer = new Timer();
+            deleteExpiredTimer.schedule(new DeleteExpiredCaller(this), taskDate );
+        } catch (Exception e) {
             handleException(e);
         }
     }
@@ -251,7 +279,7 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
     private boolean isValidMessageSignature(InfectedUserMessage infectedUserMessage) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException {
         byte[] signature = infectedUserMessage.getSignature();
 
-        Signature sign = Signature.getInstance("SHA256witRSA");
+        Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initVerify(practitionerPublicKey);
         sign.update(infectedUserMessage.getInfectedUserBytes());
         return sign.verify(signature);

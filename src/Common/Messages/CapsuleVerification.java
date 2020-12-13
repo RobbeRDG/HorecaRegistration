@@ -3,6 +3,7 @@ package Common.Messages;
 import java.io.Serializable;
 
 public class CapsuleVerification implements Serializable {
+    static final long serialVersionUID = 8L;
     private byte[] facilityKey;
     private byte[] keySignature;
 

@@ -1,6 +1,7 @@
 package Data;
 
 import Common.Objects.CapsuleLog;
+import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -82,17 +83,42 @@ public class DBConnection {
         byte[] facilityKey = capsuleLog.getFacilityKey();
         java.sql.Timestamp startTime = java.sql.Timestamp.valueOf(capsuleLog.getStartTime());
         java.sql.Timestamp stopTime = java.sql.Timestamp.valueOf(capsuleLog.getStopTime());
-        java.sql.Timestamp receivedTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
-
 
         //Create query
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO capsules(token, facility_key, start_time, stop_time, received_time) VALUES (?, ?, ?, ?, ?)");
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO capsules(token, facility_key, start_time, stop_time) VALUES (?, ?, ?, ?)");
         stmt.setBytes(1, token);
         stmt.setBytes(2, facilityKey);
         stmt.setTimestamp(3, startTime);
         stmt.setTimestamp(4, stopTime);
-        stmt.setTimestamp(5, receivedTime);
 
         stmt.executeUpdate();
+    }
+
+    public ArrayList<CapsuleLog> extractCapsules() throws SQLException {
+        ArrayList<CapsuleLog> capsuleLogs = new ArrayList<>();
+
+        //Extract all capsules from the db
+        PreparedStatement extract = conn.prepareStatement("SELECT * FROM capsules");
+        ResultSet rs = extract.executeQuery();
+        while (rs.next()) {
+            byte[] token = rs.getBytes("token");
+            byte[] facilityKey = rs.getBytes("facility_key");
+            LocalDateTime startTime = rs.getTimestamp("start_time").toLocalDateTime();
+            LocalDateTime stopTime = rs.getTimestamp("stop_time").toLocalDateTime();
+
+            capsuleLogs.add( new CapsuleLog(token, startTime, stopTime, facilityKey));
+        }
+
+        return capsuleLogs;
+    }
+
+    public void deleteCapsules(ArrayList<CapsuleLog> capsuleLogs) throws SQLException {
+        //Delete the recently fetched capsules
+        PreparedStatement delete = conn.prepareStatement("DELETE FROM capsules WHERE token = ?");
+        for( CapsuleLog capsuleLog : capsuleLogs) {
+            delete.setBytes(1, capsuleLog.getToken());
+            delete.addBatch();
+        }
+        delete.executeBatch();
     }
 }

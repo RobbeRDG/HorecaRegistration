@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 public class InfectedUserMessage implements Serializable {
+    static final long serialVersionUID = 7L;
     private InfectedUser infectedUser;
     private byte[] signature;
 
