@@ -1,9 +1,9 @@
 package Connection.MixingProxy.User;
 
-import Common.Messages.CapsuleVerification;
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
+import Messages.CapsuleVerification;
+import Objects.CapsuleLog;
 import Connection.ConnectionController;
+import RMIInterfaces.MixingProxy.MixingProxyUserService;
 
 import java.util.ArrayList;
 

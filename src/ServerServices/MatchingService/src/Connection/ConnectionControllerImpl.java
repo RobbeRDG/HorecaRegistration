@@ -1,23 +1,22 @@
 package Connection;
 
-import Common.Messages.InfectedUserMessage;
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
-import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
-import Common.RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
+import RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
 import Connection.MatchingService.MixingProxy.MatchingServiceMixingProxyImpl;
-import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
+import RMIInterfaces.MatchingService.MatchingServicePractitioner;
 import Connection.MatchingService.Practitioner.MatchingServicePractitionerImpl;
-import Common.RMIInterfaces.MatchingService.MatchingServiceUser;
+import RMIInterfaces.MatchingService.MatchingServiceUser;
 import Connection.MatchingService.User.MatchingServiceUserImpl;
 import Controller.MatchingServiceController;
+import Messages.InfectedUserMessage;
+import Objects.CapsuleLog;
+import RMIInterfaces.Registrar.RegistrarMatchingService;
+
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 

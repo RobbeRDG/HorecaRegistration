@@ -1,13 +1,11 @@
 package GUI.Login;
 
-import Common.Exceptions.AlreadyRegisteredException;
+import Exceptions.AlreadyRegisteredException;
 import Controller.UserController;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-
-import java.io.IOException;
 
 public class LoginController {
     private UserController userController;

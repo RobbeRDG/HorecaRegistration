@@ -1,9 +1,8 @@
 package Connection.Registrar.MatchingService;
 
-import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
 import Connection.ConnectionController;
+import RMIInterfaces.Registrar.RegistrarMatchingService;
 
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 

@@ -1,12 +1,12 @@
 package Controller;
 
-import Common.Exceptions.NotValidException;
-import Common.HelperObjects.FacilityVisitLogger;
-import Common.HelperObjects.SpentCapsuleLogger;
-import Common.Messages.CapsuleVerification;
-import Common.Messages.TokenUpdate;
-import Common.Objects.CapsuleLog;
-import Common.Objects.FacilityRegisterInformation;
+import Exceptions.NotValidException;
+import HelperObjects.FacilityVisitLogger;
+import HelperObjects.SpentCapsuleLogger;
+import Messages.CapsuleVerification;
+import Messages.TokenUpdate;
+import Objects.CapsuleLog;
+import Objects.FacilityRegisterInformation;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Controller.HelperObjects.*;

@@ -1,7 +1,7 @@
 package Connection;
 
-import Common.Messages.PseudonymUpdate;
-import Common.RMIInterfaces.Registrar.RegistrarFacilityService;
+import Messages.PseudonymUpdate;
+import RMIInterfaces.Registrar.RegistrarFacilityService;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

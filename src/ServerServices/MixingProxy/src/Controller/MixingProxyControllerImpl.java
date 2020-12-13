@@ -1,13 +1,18 @@
 package Controller;
 
-import Common.Exceptions.NotValidException;
-import Common.Messages.CapsuleVerification;
-import Common.Objects.CapsuleLog;
-import Common.Objects.Token;
+import Exceptions.NotValidException;
+import GUI.AppController;
+import Messages.CapsuleVerification;
+import Objects.CapsuleLog;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Controller.HelperObjects.FlushCapsulesCaller;
 import Data.DBConnection;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -25,23 +30,57 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Timer;
 
-public class MixingProxyControllerImpl implements MixingProxyController{
+public class MixingProxyControllerImpl extends Application implements MixingProxyController{
     private static DBConnection dbConnection;
     private static ConnectionController connectionController;
     private static PrivateKey mixingProxyPrivateKey;
     private static PublicKey mixingProxyPublicKey;
     private static final int flushPeriodInSeconds = 60;
+    private static Stage primaryStage;
+    private static AppController appController;
+    private static Pane appPane;
 
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
     ///////////////////////////////////////////////////////////////////
 
-    public MixingProxyControllerImpl() throws InvalidKeySpecException, ClassNotFoundException, NoSuchAlgorithmException, IOException {
-        if (dbConnection == null) dbConnection = new DBConnection();
-        if (connectionController == null) connectionController = new ConnectionControllerImpl(this);
-        if (mixingProxyPrivateKey == null || mixingProxyPublicKey == null) {
-            mixingProxyPublicKey = readPublicKey();
-            mixingProxyPrivateKey = readPrivateKey();
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        try {
+            System.out.println("Starting Mixing proxy service...");
+
+            this.primaryStage = primaryStage;
+
+            //Setup variables
+            setUpControllerVariables();
+
+            //load the app gui controller
+            loadControllers();
+
+            //Connect to the database
+            dbConnection.connectToDatabase();
+
+            //Start the connection server
+            connectionController.startServerConnections();
+
+            //Sleep for 10 sec
+            Thread.sleep(10000);
+
+            //Start the clientConnections
+            connectionController.startClientConnections();
+
+            //Flush capsules
+            flushCapsules();
+
+            //Show the app screen
+            showApp();
+
+            //load the db capsules in the GUI
+            appController.showCapsules(dbConnection.getAllCapsules());
+
+            System.out.println("Mixing proxy ready");
+        } catch (Exception e){
+            handleException(e);
         }
     }
 
@@ -81,40 +120,51 @@ public class MixingProxyControllerImpl implements MixingProxyController{
 
     public static void main(String[] args){
         try {
-            MixingProxyControllerImpl mixingProxy = new MixingProxyControllerImpl();
-            mixingProxy.start();
-            //registrar.stop();
+            if (System.getSecurityManager() == null) {
+                System.setSecurityManager(new SecurityManager());
+            }
+
+            launch(args);
         } catch (Exception e) {
             handleException(e);
         }
     }
 
-    private void start() {
-        try {
-            System.out.println("Starting Mixing proxy service...");
+    public void showApp() throws IOException {
+        //Display the chat fxml file
+        Scene scene = new Scene(appPane);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
 
-            //Connect to the database
-            dbConnection.connectToDatabase();
+    private void loadControllers() throws IOException {
+        //Load the app controller
+        FXMLLoader appLoader = new FXMLLoader(getClass().getResource("../GUI/App.fxml"));
+        appPane = appLoader.load();
 
-            //Start the connection server
-            connectionController.startServerConnections();
+        //load the controller and pass the chatRoom and listener
+        appController = (AppController) appLoader.getController();
+        //Set the ClientSide.GUI Controller
+        appController.setMixingProxyController(this);
+    }
 
-            //Sleep for 10 sec
-            Thread.sleep(10000);
-
-            //Start the clientConnections
-            connectionController.startClientConnections();
-
-            //Flush capsules
-            flushCapsules();
-
-            System.out.println("Mixing proxy ready");
-        } catch (Exception e){
-            handleException(e);
+    private void setUpControllerVariables() throws InvalidKeySpecException, ClassNotFoundException, NoSuchAlgorithmException, IOException {
+        if (dbConnection == null) dbConnection = new DBConnection();
+        if (connectionController == null) connectionController = new ConnectionControllerImpl(this);
+        if (mixingProxyPrivateKey == null || mixingProxyPublicKey == null) {
+            mixingProxyPublicKey = readPublicKey();
+            mixingProxyPrivateKey = readPrivateKey();
         }
     }
 
-    private void stop() {
+
+    @Override
+    public void refreshPrimaryStage() {
+        primaryStage.show();
+    }
+
+    @Override
+    public void stop() {
         int status = 0;
         try {
             System.out.println("Stopping Mixing proxy service...");
@@ -240,4 +290,6 @@ public class MixingProxyControllerImpl implements MixingProxyController{
             throw new Exception("Couldn't acknowledge infected tokens: Something went wrong");
         }
     }
+
+
 }

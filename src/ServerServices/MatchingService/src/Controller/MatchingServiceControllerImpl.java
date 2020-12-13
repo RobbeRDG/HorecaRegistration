@@ -1,14 +1,20 @@
 package Controller;
 
-import Common.Exceptions.NotValidException;
-import Common.Messages.InfectedUserMessage;
-import Common.Objects.CapsuleLog;
-import Common.Objects.FacilityVisitLog;
+import Exceptions.NotValidException;
+import GUI.AppController;
+import Messages.InfectedUserMessage;
+import Objects.CapsuleLog;
+import Objects.FacilityVisitLog;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Controller.HelperObjects.DeleteExpiredCaller;
 import Controller.HelperObjects.SendUnacknowledgedTokensCaller;
 import Data.DBConnection;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -18,7 +24,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.sql.Date;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -26,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Timer;
 
-public class MatchingServiceControllerImpl implements MatchingServiceController{
+public class MatchingServiceControllerImpl extends Application implements MatchingServiceController{
     private static DBConnection dbConnection;
     private static ConnectionController connectionController;
     private static PrivateKey mixingProxyPrivateKey;
@@ -34,12 +39,78 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
     private static PublicKey practitionerPublicKey;
     private static final int uninformedRevealPeriodInDays = 1;
     private static final int expirationPeriodInDays = 30;
+    private static Stage primaryStage;
+    private static AppController appController;
+    private static Pane appPane;
 
     ///////////////////////////////////////////////////////////////////
     ///         MIXING PROXY INTERNAL LOGIC
     ///////////////////////////////////////////////////////////////////
 
-    public MatchingServiceControllerImpl() throws InvalidKeySpecException, ClassNotFoundException, NoSuchAlgorithmException, IOException {
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        try {
+            System.out.println("Starting Matching service...");
+
+            this.primaryStage = primaryStage;
+
+            //Setup variables
+            setUpControllerVariables();
+
+            //load the app gui controller
+            loadControllers();
+
+            //Connect to the database
+            dbConnection.connectToDatabase();
+
+            //Start the connection server
+            connectionController.startServerConnections();
+
+            //Sleep for 10 sec
+            Thread.sleep(10000);
+
+            //Start the client connections
+            connectionController.startClientConnections();
+
+            //Delete the expired capsules
+            deleteExpiredCapsules();
+
+            //Show the app screen
+            showApp();
+
+            //load the db capsules in the GUI
+            appController.showCapsules(dbConnection.getAllCapsules());
+
+            System.out.println("Matching service ready");
+        } catch (Exception e){
+            handleException(e);
+        }
+    }
+
+    public void refreshPrimaryStage() {
+        primaryStage.show();
+    }
+
+    public void showApp() throws IOException {
+        //Display the chat fxml file
+        Scene scene = new Scene(appPane);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void loadControllers() throws IOException {
+        //Load the app controller
+        FXMLLoader appLoader = new FXMLLoader(getClass().getResource("../GUI/App.fxml"));
+        appPane = appLoader.load();
+
+        //load the controller and pass the chatRoom and listener
+        appController = (AppController) appLoader.getController();
+        //Set the ClientSide.GUI Controller
+        appController.setMatchingServiceController(this);
+    }
+
+    private void setUpControllerVariables() throws InvalidKeySpecException, ClassNotFoundException, NoSuchAlgorithmException, IOException {
         if (dbConnection == null) dbConnection = new DBConnection();
         if (connectionController == null) connectionController = new ConnectionControllerImpl(this);
         if (mixingProxyPrivateKey == null || mixingProxyPublicKey == null || practitionerPublicKey == null) {
@@ -102,38 +173,16 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
 
     public static void main(String[] args){
         try {
-            MatchingServiceControllerImpl matchingService = new MatchingServiceControllerImpl();
-            matchingService.start();
-            //registrar.stop();
+            if (System.getSecurityManager() == null) {
+                System.setSecurityManager(new SecurityManager());
+            }
+
+            launch(args);
         } catch (Exception e) {
             handleException(e);
         }
     }
 
-    private void start() {
-        try {
-            System.out.println("Starting Matching service...");
-
-            //Connect to the database
-            dbConnection.connectToDatabase();
-
-            //Start the connection server
-            connectionController.startServerConnections();
-
-            //Sleep for 10 sec
-            Thread.sleep(10000);
-
-            //Start the client connections
-            connectionController.startClientConnections();
-
-            //Delete the expired capsules
-            deleteExpiredCapsules();
-
-            System.out.println("Matching service ready");
-        } catch (Exception e){
-            handleException(e);
-        }
-    }
 
     public void deleteExpiredCapsules() {
         try {
@@ -147,12 +196,15 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
             java.util.Date taskDate = Date.from(LocalDateTime.now().plusDays(1).atZone(ZoneId.systemDefault()).toInstant());
             Timer deleteExpiredTimer = new Timer();
             deleteExpiredTimer.schedule(new DeleteExpiredCaller(this), taskDate );
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
         } catch (Exception e) {
             handleException(e);
         }
     }
 
-    private void stop() {
+    public void stop() {
         int status = 0;
         try {
             System.out.println("Stopping Matching service...");
@@ -186,6 +238,9 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
 
             //Set the infected user tokens to informed
             dbConnection.markInformed(infectedUserMessage.getInfectedUser().getInfectedTokens());
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
         } catch (SignatureException e) {
             throw e;
         } catch (Exception e) {
@@ -215,6 +270,9 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
     public void addCapsules(ArrayList<CapsuleLog> capsules) throws Exception {
         try {
             dbConnection.addCapsules(capsules);
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
         } catch (Exception e) {
             handleException(e);
             throw new Exception("Couldn't upload the capsule logs: Something went wrong");
@@ -225,6 +283,9 @@ public class MatchingServiceControllerImpl implements MatchingServiceController{
     public void submitAcknowledgements(ArrayList<byte[]> acknowledgementTokens) throws Exception {
         try {
             dbConnection.markInformed(acknowledgementTokens);
+
+            //Show the new capsule contents
+            appController.showCapsules(dbConnection.getAllCapsules());
         } catch (Exception e) {
             handleException(e);
             throw new Exception("Couldn't acknowledge tokens: Something went wrong");

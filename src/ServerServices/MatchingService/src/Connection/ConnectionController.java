@@ -1,11 +1,10 @@
 package Connection;
 
-import Common.Messages.InfectedUserMessage;
-import Common.Objects.CapsuleLog;
+import Messages.InfectedUserMessage;
+import Objects.CapsuleLog;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 

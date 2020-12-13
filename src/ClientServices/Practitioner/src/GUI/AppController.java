@@ -21,6 +21,14 @@ public class AppController {
     public void handleSendInfectedLogsButton(javafx.event.ActionEvent actionEvent) throws Exception {
         try {
             practitionerController.sendInfectedUserLogs();
+
+            //Show a confirmation popup
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("SUCCESS");
+            alert.setHeaderText(null);
+            alert.setContentText("Infected logs uploaded");
+            alert.show();
+            return;
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("ERROR");

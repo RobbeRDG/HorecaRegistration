@@ -1,7 +1,7 @@
 package Connection;
 
-import Common.Messages.InfectedUserMessage;
-import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
+import Messages.InfectedUserMessage;
+import RMIInterfaces.MatchingService.MatchingServicePractitioner;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

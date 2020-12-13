@@ -1,8 +1,8 @@
 package Connection.MatchingService.MixingProxy;
 
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
+import Objects.CapsuleLog;
 import Connection.ConnectionController;
+import RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
 
 import java.util.ArrayList;
 

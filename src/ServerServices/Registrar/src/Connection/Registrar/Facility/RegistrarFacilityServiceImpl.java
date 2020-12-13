@@ -1,8 +1,8 @@
 package Connection.Registrar.Facility;
 
-import Common.Messages.PseudonymUpdate;
-import Common.RMIInterfaces.Registrar.RegistrarFacilityService;
+import Messages.PseudonymUpdate;
 import Connection.ConnectionController;
+import RMIInterfaces.Registrar.RegistrarFacilityService;
 
 public class RegistrarFacilityServiceImpl implements RegistrarFacilityService {
     private static ConnectionController connectionController;

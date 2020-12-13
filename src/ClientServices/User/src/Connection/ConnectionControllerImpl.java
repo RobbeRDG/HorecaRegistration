@@ -1,12 +1,11 @@
 package Connection;
 
-import Common.Messages.CapsuleVerification;
-import Common.Messages.TokenUpdate;
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
-import Common.RMIInterfaces.MatchingService.MatchingServiceUser;
-import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
-import Common.RMIInterfaces.Registrar.RegistrarUserService;
+import Messages.CapsuleVerification;
+import Messages.TokenUpdate;
+import Objects.CapsuleLog;
+import RMIInterfaces.MatchingService.MatchingServiceUser;
+import RMIInterfaces.MixingProxy.MixingProxyUserService;
+import RMIInterfaces.Registrar.RegistrarUserService;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

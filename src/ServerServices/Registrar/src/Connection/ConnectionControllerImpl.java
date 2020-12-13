@@ -1,14 +1,14 @@
 package Connection;
 
-import Common.Exceptions.AlreadyRegisteredException;
-import Common.Messages.PseudonymUpdate;
-import Common.Messages.TokenUpdate;
-import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
-import Common.RMIInterfaces.Registrar.RegistrarFacilityService;
-import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
+import Exceptions.AlreadyRegisteredException;
+import Messages.PseudonymUpdate;
+import Messages.TokenUpdate;
+import RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
+import RMIInterfaces.Registrar.RegistrarFacilityService;
 import Connection.Registrar.Facility.RegistrarFacilityServiceImpl;
-import Common.RMIInterfaces.Registrar.RegistrarUserService;
+import RMIInterfaces.Registrar.RegistrarMatchingService;
 import Connection.Registrar.MatchingService.RegistrarMatchingServiceImpl;
+import RMIInterfaces.Registrar.RegistrarUserService;
 import Connection.Registrar.User.RegistrarUserServiceImpl;
 import Controller.RegistrarController;
 

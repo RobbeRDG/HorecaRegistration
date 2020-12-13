@@ -1,20 +1,24 @@
 package Controller;
 
-import Common.Exceptions.AlreadyRegisteredException;
-import Common.Exceptions.NotRegisteredException;
-import Common.Messages.PseudonymUpdate;
-import Common.Messages.TokenUpdate;
-import Common.Objects.Token;
+import Exceptions.AlreadyRegisteredException;
+import Exceptions.NotRegisteredException;
+import GUI.AppController;
+import Messages.PseudonymUpdate;
+import Messages.TokenUpdate;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Data.DBConnection;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -26,7 +30,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class RegistrarControllerImpl implements RegistrarController {
+public class RegistrarControllerImpl extends Application implements RegistrarController {
     private static DBConnection dbConnection;
     private static ConnectionController connectionController;
     private static PrivateKey masterKeyPrivate;
@@ -36,15 +40,9 @@ public class RegistrarControllerImpl implements RegistrarController {
     private static final int saltLength = 16;
     private static final int numberOfTokens = 48;
     private static final int tokenLength = 16;
-
-    public RegistrarControllerImpl() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, CertificateException, ClassNotFoundException {
-        if (dbConnection == null) dbConnection = new DBConnection();
-        if (connectionController == null) connectionController = new ConnectionControllerImpl(this);
-        if (masterKeyPrivate == null || masterKeyPublic == null) {
-            masterKeyPublic = readPublicKey();
-            masterKeyPrivate = readPrivateKey();
-        }
-    }
+    private static Stage primaryStage;
+    private static AppController appController;
+    private static Pane appPane;
 
     ///////////////////////////////////////////////////////////////////
     ///         REGISTRAR LOGIC
@@ -86,18 +84,28 @@ public class RegistrarControllerImpl implements RegistrarController {
 
     public static void main(String[] args){
         try {
-            RegistrarControllerImpl registrar = new RegistrarControllerImpl();
-            registrar.start();
-            //registrar.stop();
+            if (System.getSecurityManager() == null) {
+                System.setSecurityManager(new SecurityManager());
+            }
+
+            launch(args);
         } catch (Exception e) {
-            System.out.println("Registrar failed");
-            e.printStackTrace();
+            handleException(e);
         }
     }
 
-    private void start() {
+    @Override
+    public void start(Stage primaryStage) throws Exception {
         try {
             System.out.println("Starting Registar service...");
+
+            this.primaryStage = primaryStage;
+
+            //Setup variables
+            setUpControllerVariables();
+
+            //load the app gui controller
+            loadControllers();
 
             //Connect to the database
             dbConnection.connectToDatabase();
@@ -111,13 +119,53 @@ public class RegistrarControllerImpl implements RegistrarController {
             //Connect to the servers
             connectionController.startClientConnections();
 
+            //Show the app screen
+            showApp();
+
+            //load the db capsules in the GUI
+            appController.showAuthenticatedUsers(dbConnection.getAllRegisteredUsers());
+            appController.showAuthenticatedFacilities(dbConnection.getAllRegisteredFacilities());
+
             System.out.println("Registrar ready");
         } catch (Exception e){
             handleException(e);
         }
     }
 
-    private void stop() {
+    public void showApp() throws IOException {
+        //Display the chat fxml file
+        Scene scene = new Scene(appPane);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void loadControllers() throws IOException {
+        //Load the app controller
+        FXMLLoader appLoader = new FXMLLoader(getClass().getResource("../GUI/App.fxml"));
+        appPane = appLoader.load();
+
+        //load the controller and pass the chatRoom and listener
+        appController = (AppController) appLoader.getController();
+        //Set the ClientSide.GUI Controller
+        appController.setRegistrarController(this);
+    }
+
+    private void setUpControllerVariables() throws InvalidKeySpecException, ClassNotFoundException, NoSuchAlgorithmException, IOException {
+        if (dbConnection == null) dbConnection = new DBConnection();
+        if (connectionController == null) connectionController = new ConnectionControllerImpl(this);
+        if (masterKeyPrivate == null || masterKeyPublic == null) {
+            masterKeyPublic = readPublicKey();
+            masterKeyPrivate = readPrivateKey();
+        }
+    }
+
+
+    @Override
+    public void refreshPrimaryStage() {
+        primaryStage.show();
+    }
+
+    public void stop() {
         int status = 0;
         try {
             System.out.println("Stopping Registar service...");
@@ -130,7 +178,7 @@ public class RegistrarControllerImpl implements RegistrarController {
         }
     }
 
-    private void handleException(Exception e) {
+    private static void handleException(Exception e) {
         e.printStackTrace();
     }
 
@@ -152,6 +200,9 @@ public class RegistrarControllerImpl implements RegistrarController {
 
             //Place the new facility in the db
             dbConnection.registerCateringFacility(facilityIdentifier);
+
+            //Reload the facility table in the GUI
+            appController.showAuthenticatedFacilities(dbConnection.getAllRegisteredFacilities());
 
             System.out.println("New facility registered: " + facilityIdentifier);
         } catch (IllegalArgumentException | AlreadyRegisteredException e) {
@@ -311,6 +362,9 @@ public class RegistrarControllerImpl implements RegistrarController {
 
             //Place the new user in the db
             dbConnection.registerUser(userIdentifier);
+
+            //Reload the user table in GUI
+            appController.showAuthenticatedUsers(dbConnection.getAllRegisteredUsers());
 
             System.out.println("New user registered: " + userIdentifier);
         } catch (IllegalArgumentException | AlreadyRegisteredException e) {

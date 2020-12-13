@@ -1,7 +1,7 @@
 package Controller;
 
-import Common.Exceptions.AlreadyRegisteredException;
-import Common.Messages.PseudonymUpdate;
+import Exceptions.AlreadyRegisteredException;
+import Messages.PseudonymUpdate;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import Controller.HelperObjects.QRGenerator;
@@ -112,12 +112,8 @@ public class FacilityControllerImpl implements FacilityController {
 
 
     private void registerFacility() throws Exception {
-        try {
-            connectionController.registerCateringFacility(facilityIdentifier);
-            System.out.println("Registered facility");
-        } catch (Exception e) {
-            handleException(e);
-        }
+        connectionController.registerCateringFacility(facilityIdentifier);
+        System.out.println("Registered facility");
     }
 
     private void generateQR() throws Exception {

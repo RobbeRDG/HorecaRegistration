@@ -1,9 +1,9 @@
 package Data;
 
-import Common.Objects.Token;
+import Controller.HelperObjects.RegistrarFacilityDBEntry;
+import Controller.HelperObjects.RegistrarUserDBEntry;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
@@ -197,5 +197,37 @@ public class DBConnection {
         }
 
         stmt.executeUpdate();
+    }
+
+    public ArrayList<RegistrarUserDBEntry> getAllRegisteredUsers() throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users");
+
+        ResultSet rs = stmt.executeQuery();
+
+        ArrayList<RegistrarUserDBEntry> dbEntries = new ArrayList<>();
+        while (rs.next()) {
+            String userIdentifier = rs.getString("user_identifier");
+
+            dbEntries.add(new RegistrarUserDBEntry(userIdentifier));
+        }
+
+        return dbEntries;
+    }
+
+    public ArrayList<RegistrarFacilityDBEntry> getAllRegisteredFacilities() throws SQLException {
+        //Create query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM cateringfacilities");
+
+        ResultSet rs = stmt.executeQuery();
+
+        ArrayList<RegistrarFacilityDBEntry> dbEntries = new ArrayList<>();
+        while (rs.next()) {
+            String facilityIdentifier = rs.getString("facility_identifier");
+
+            dbEntries.add(new RegistrarFacilityDBEntry(facilityIdentifier));
+        }
+
+        return dbEntries;
     }
 }

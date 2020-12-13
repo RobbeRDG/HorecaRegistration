@@ -1,6 +1,6 @@
 package Connection;
 
-import Common.Messages.InfectedUserMessage;
+import Messages.InfectedUserMessage;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

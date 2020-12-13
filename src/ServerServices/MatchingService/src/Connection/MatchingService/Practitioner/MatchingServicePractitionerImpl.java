@@ -1,8 +1,8 @@
 package Connection.MatchingService.Practitioner;
 
-import Common.Messages.InfectedUserMessage;
-import Common.RMIInterfaces.MatchingService.MatchingServicePractitioner;
+import Messages.InfectedUserMessage;
 import Connection.ConnectionController;
+import RMIInterfaces.MatchingService.MatchingServicePractitioner;
 
 public class MatchingServicePractitionerImpl implements MatchingServicePractitioner {
     private ConnectionController connectionController;

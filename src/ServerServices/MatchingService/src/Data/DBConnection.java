@@ -1,7 +1,8 @@
 package Data;
 
-import Common.Objects.CapsuleLog;
-import Common.Objects.FacilityVisitLog;
+import Controller.HelperObjects.MatchingServiceCapsuleDBEntry;
+import Objects.CapsuleLog;
+import Objects.FacilityVisitLog;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -12,7 +13,6 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class DBConnection {
     private static String url;
@@ -137,5 +137,28 @@ public class DBConnection {
 
         //Run Querry
         stmt.executeUpdate();
+    }
+
+    public ArrayList<MatchingServiceCapsuleDBEntry> getAllCapsules() throws SQLException {
+        //Prepare query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM capsules");
+
+        //run the query
+        ResultSet rs = stmt.executeQuery();
+
+        //Extract the db entries
+        ArrayList<MatchingServiceCapsuleDBEntry> dbEntries = new ArrayList<>();
+        while (rs.next()) {
+            byte[] token = rs.getBytes("token");
+            byte[] facilityKey = rs.getBytes("facility_key");
+            LocalDateTime startTime = rs.getTimestamp("start_time").toLocalDateTime();
+            LocalDateTime stopTime = rs.getTimestamp("stop_time").toLocalDateTime();
+            boolean critical = rs.getBoolean("critical");
+            boolean informed = rs.getBoolean("informed");
+
+            dbEntries.add(new MatchingServiceCapsuleDBEntry(token, facilityKey, startTime, stopTime, critical, informed));
+        }
+
+        return dbEntries;
     }
 }

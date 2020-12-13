@@ -1,7 +1,7 @@
 package Connection.MixingProxy.Registrar;
 
-import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
 import Connection.ConnectionController;
+import RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

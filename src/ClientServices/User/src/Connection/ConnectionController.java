@@ -1,8 +1,8 @@
 package Connection;
 
-import Common.Messages.CapsuleVerification;
-import Common.Messages.TokenUpdate;
-import Common.Objects.CapsuleLog;
+import Messages.CapsuleVerification;
+import Messages.TokenUpdate;
+import Objects.CapsuleLog;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

@@ -1,11 +1,11 @@
 package Connection;
 
-import Common.Messages.CapsuleVerification;
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
-import Common.RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
+import Messages.CapsuleVerification;
+import Objects.CapsuleLog;
+import RMIInterfaces.MatchingService.MatchingServiceMixingProxy;
+import RMIInterfaces.MixingProxy.MixingProxyRegistrarService;
 import Connection.MixingProxy.Registrar.MixingProxyRegistrarServiceImpl;
-import Common.RMIInterfaces.MixingProxy.MixingProxyUserService;
+import RMIInterfaces.MixingProxy.MixingProxyUserService;
 import Connection.MixingProxy.User.MixingProxyUserServiceImpl;
 import Controller.MixingProxyController;
 

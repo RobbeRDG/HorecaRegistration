@@ -1,7 +1,7 @@
 package Connection;
 
-import Common.Messages.CapsuleVerification;
-import Common.Objects.CapsuleLog;
+import Messages.CapsuleVerification;
+import Objects.CapsuleLog;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

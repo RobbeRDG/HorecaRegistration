@@ -1,9 +1,8 @@
 package Connection;
 
-import Common.Exceptions.AlreadyRegisteredException;
-import Common.Messages.PseudonymUpdate;
-import Common.Messages.TokenUpdate;
-import Common.Objects.Token;
+import Exceptions.AlreadyRegisteredException;
+import Messages.PseudonymUpdate;
+import Messages.TokenUpdate;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

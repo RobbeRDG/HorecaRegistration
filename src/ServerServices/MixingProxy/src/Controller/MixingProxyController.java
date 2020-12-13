@@ -1,7 +1,7 @@
 package Controller;
 
-import Common.Messages.CapsuleVerification;
-import Common.Objects.CapsuleLog;
+import Messages.CapsuleVerification;
+import Objects.CapsuleLog;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -13,4 +13,6 @@ public interface MixingProxyController {
     void flushCapsules();
 
     void acknowledgeTokens(ArrayList<byte[]> acknowledgeTokens) throws Exception;
+
+    void refreshPrimaryStage();
 }

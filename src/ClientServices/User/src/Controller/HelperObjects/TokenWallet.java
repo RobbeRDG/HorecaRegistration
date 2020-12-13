@@ -1,9 +1,8 @@
 package Controller.HelperObjects;
 
-import Common.Messages.TokenUpdate;
-import Common.Objects.CapsuleLog;
-import Common.Objects.FacilityRegisterInformation;
-import Common.Objects.Token;
+import Messages.TokenUpdate;
+import Objects.CapsuleLog;
+import Objects.FacilityRegisterInformation;
 import Controller.UserController;
 
 import java.io.IOException;

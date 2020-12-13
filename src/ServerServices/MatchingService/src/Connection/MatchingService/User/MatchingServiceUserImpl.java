@@ -1,8 +1,8 @@
 package Connection.MatchingService.User;
 
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.MatchingService.MatchingServiceUser;
+import Objects.CapsuleLog;
 import Connection.ConnectionController;
+import RMIInterfaces.MatchingService.MatchingServiceUser;
 
 import java.util.ArrayList;
 

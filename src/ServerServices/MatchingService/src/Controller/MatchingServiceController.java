@@ -1,13 +1,9 @@
 package Controller;
 
-import Common.Messages.InfectedUserMessage;
-import Common.Objects.CapsuleLog;
+import Messages.InfectedUserMessage;
+import Objects.CapsuleLog;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.sql.SQLException;
+import java.security.PrivateKey;
 import java.util.ArrayList;
 
 public interface MatchingServiceController {
@@ -20,4 +16,5 @@ public interface MatchingServiceController {
     ArrayList<CapsuleLog> getInfectedCapsules() throws Exception;
     void sendUnacknowledgedTokens();
     void deleteExpiredCapsules();
+    void refreshPrimaryStage();
 }

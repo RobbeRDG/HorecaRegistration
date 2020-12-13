@@ -1,16 +1,16 @@
 package Controller;
 
-import Common.Exceptions.AlreadyRegisteredException;
-import Common.Messages.PseudonymUpdate;
-import Common.Messages.TokenUpdate;
-import Common.Objects.Token;
+import Exceptions.AlreadyRegisteredException;
+import Messages.PseudonymUpdate;
+import Messages.TokenUpdate;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Calendar;
 
 public interface RegistrarController {
+    public void refreshPrimaryStage();
+
     //Catering facility enrollment
     void registerCateringFacility(String facilityIdentifier) throws Exception;
     PseudonymUpdate getPseudomyms(String facilityIdentifier, int year, int monthIndex) throws Exception;
@@ -19,7 +19,7 @@ public interface RegistrarController {
     void registerUser(String userIdentifier) throws SQLException, AlreadyRegisteredException;
     TokenUpdate getTokens(String userIdentifier, LocalDate date) throws Exception;
 
-    byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws SQLException, Exception;
-
+    //Matching service
+    byte[] getFacilityPseudonym(String facilityIdentifier, LocalDate date) throws Exception;
     void addUnacknowledgedTokens(ArrayList<byte[]> unacknowledgedTokens) throws Exception;
 }

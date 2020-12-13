@@ -1,6 +1,6 @@
 package Connection;
 
-import Common.Messages.PseudonymUpdate;
+import Messages.PseudonymUpdate;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

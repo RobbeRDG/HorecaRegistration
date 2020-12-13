@@ -1,11 +1,10 @@
 package Controller;
 
-import Common.HelperObjects.FacilityVisitLogger;
-import Common.HelperObjects.SpentCapsuleLogger;
-import Common.Messages.InfectedUserMessage;
-import Common.Objects.CapsuleLog;
-import Common.Objects.FacilityVisitLog;
-import Common.Objects.InfectedUser;
+import HelperObjects.FacilityVisitLogger;
+import HelperObjects.SpentCapsuleLogger;
+import Messages.InfectedUserMessage;
+import Objects.FacilityVisitLog;
+import Objects.InfectedUser;
 import Connection.ConnectionController;
 import Connection.ConnectionControllerImpl;
 import GUI.AppController;
@@ -23,7 +22,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
-import java.util.Timer;
 
 public class PractitionerControllerImpl extends Application implements PractitionerController{
     private static final ConnectionController connectionController = new ConnectionControllerImpl();

@@ -1,8 +1,7 @@
 package Data;
 
-import Common.Objects.CapsuleLog;
-import Common.RMIInterfaces.Registrar.RegistrarMatchingService;
-
+import Controller.HelperObjects.MixingProxyCapsuleDBEntry;
+import Objects.CapsuleLog;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -120,5 +119,26 @@ public class DBConnection {
             delete.addBatch();
         }
         delete.executeBatch();
+    }
+
+    public ArrayList<MixingProxyCapsuleDBEntry> getAllCapsules() throws SQLException {
+        //Prepare query
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM capsules");
+
+        //run the query
+        ResultSet rs = stmt.executeQuery();
+
+        //Extract the db entries
+        ArrayList<MixingProxyCapsuleDBEntry> dbEntries = new ArrayList<>();
+        while (rs.next()) {
+            byte[] token = rs.getBytes("token");
+            byte[] facilityKey = rs.getBytes("facility_key");
+            LocalDateTime startTime = rs.getTimestamp("start_time").toLocalDateTime();
+            LocalDateTime stopTime = rs.getTimestamp("stop_time").toLocalDateTime();
+
+            dbEntries.add(new MixingProxyCapsuleDBEntry(token, facilityKey, startTime, stopTime));
+        }
+
+        return dbEntries;
     }
 }
