@@ -67,6 +67,16 @@ public class PractitionerControllerImpl extends Application implements Practitio
         }
     }
 
+    @Override
+    public void stop() {
+        try {
+            System.out.println("stopping practitioner...");
+            System.exit(0);
+        } catch (Exception e) {
+            handleException(e);
+        }
+    }
+
     private void loadController() throws IOException {
         //Load the login controller
         FXMLLoader appLoader = new FXMLLoader(getClass().getResource("../GUI/App.fxml"));

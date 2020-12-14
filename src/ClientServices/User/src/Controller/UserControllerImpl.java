@@ -144,6 +144,16 @@ public class UserControllerImpl extends Application implements UserController{
     }
 
     @Override
+    public void stop() {
+        try {
+            System.out.println("stopping user...");
+            System.exit(0);
+        } catch (Exception e) {
+            handleException(e);
+        }
+    }
+
+    @Override
     public PublicKey getRegistrarPublicKey() {
         return registrarPublicKey;
     }

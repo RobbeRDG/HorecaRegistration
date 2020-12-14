@@ -35,11 +35,11 @@ public class RegistrarControllerImpl extends Application implements RegistrarCon
     private static ConnectionController connectionController;
     private static PrivateKey masterKeyPrivate;
     private static PublicKey masterKeyPublic;
-    private static final int secretKeyLength = 128;
+    private static final int secretKeyLengthInBit = 128;
     private static final int secretKeyIterations = 1000;
     private static final int saltLength = 16;
     private static final int numberOfTokens = 48;
-    private static final int tokenLength = 16;
+    private static final int tokenLength = 32;
     private static Stage primaryStage;
     private static AppController appController;
     private static Pane appPane;
@@ -318,7 +318,7 @@ public class RegistrarControllerImpl extends Application implements RegistrarCon
             byte[] salt = new byte[saltLength];
             random.nextBytes(salt);
 
-            PBEKeySpec spec = new PBEKeySpec(secretKeyStarterChars, salt, secretKeyIterations, secretKeyLength);
+            PBEKeySpec spec = new PBEKeySpec(secretKeyStarterChars, salt, secretKeyIterations, secretKeyLengthInBit);
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
 
             byte[] secretKey = skf.generateSecret(spec).getEncoded();

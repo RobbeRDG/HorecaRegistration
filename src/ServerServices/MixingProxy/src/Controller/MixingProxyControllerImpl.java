@@ -35,7 +35,7 @@ public class MixingProxyControllerImpl extends Application implements MixingProx
     private static ConnectionController connectionController;
     private static PrivateKey mixingProxyPrivateKey;
     private static PublicKey mixingProxyPublicKey;
-    private static final int flushPeriodInSeconds = 60;
+    private static final int flushPeriodInSeconds = 3600;
     private static Stage primaryStage;
     private static AppController appController;
     private static Pane appPane;
@@ -193,6 +193,9 @@ public class MixingProxyControllerImpl extends Application implements MixingProx
             Timer nextFlush = new Timer();
             nextFlush.schedule(new FlushCapsulesCaller(this), flushDate);
 
+            //load the db capsules in the GUI
+            appController.showCapsules(dbConnection.getAllCapsules());
+
             System.out.println("Flushed the current capsules");
         } catch (Exception e) {
             handleException(e);
@@ -220,6 +223,9 @@ public class MixingProxyControllerImpl extends Application implements MixingProx
 
             //Place the capsule in the db
             dbConnection.addCapsule(capsuleLog);
+
+            //load the db capsules in the GUI
+            appController.showCapsules(dbConnection.getAllCapsules());
 
             //Return the signed facility key
             return generateCapsuleVerification(capsuleLog);

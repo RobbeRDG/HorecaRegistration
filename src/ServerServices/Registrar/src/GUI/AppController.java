@@ -56,18 +56,22 @@ public class AppController {
     }
 
     public void showAuthenticatedFacilities(ArrayList<RegistrarFacilityDBEntry> allRegisteredFacilities) {
-        TableColumn facilityIdentifierColumn = new TableColumn("Facility identifier");
-        facilityIdentifierColumn.setMinWidth(100);
-        facilityIdentifierColumn.setCellValueFactory(
-                new PropertyValueFactory<RegistrarUserDBEntry, String>("facilityIdentifier"));
+        Platform.runLater(new Runnable() {
+            @Override public void run() {
+                TableColumn facilityIdentifierColumn = new TableColumn("Facility identifier");
+                facilityIdentifierColumn.setMinWidth(100);
+                facilityIdentifierColumn.setCellValueFactory(
+                        new PropertyValueFactory<RegistrarUserDBEntry, String>("facilityIdentifier"));
 
 
-        ObservableList entries = FXCollections.observableArrayList(allRegisteredFacilities);
-        authenticatedFacilitiesTableView.getColumns().clear();
-        authenticatedFacilitiesTableView.getItems().clear();
-        authenticatedFacilitiesTableView.getColumns().addAll(facilityIdentifierColumn);
-        authenticatedFacilitiesTableView.getItems().addAll(entries);
+                ObservableList entries = FXCollections.observableArrayList(allRegisteredFacilities);
+                authenticatedFacilitiesTableView.getColumns().clear();
+                authenticatedFacilitiesTableView.getItems().clear();
+                authenticatedFacilitiesTableView.getColumns().addAll(facilityIdentifierColumn);
+                authenticatedFacilitiesTableView.getItems().addAll(entries);
 
-        registrarController.refreshPrimaryStage();
+                registrarController.refreshPrimaryStage();
+            }
+        });
     }
 }
